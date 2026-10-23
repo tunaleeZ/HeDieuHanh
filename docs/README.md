@@ -70,15 +70,7 @@ To exit QEMU using the default xv6 Makefile configuration, press `Ctrl+A`, then 
 - [ ] `echo hello` runs successfully in the xv6 shell.
 - [ ] xv6-riscv can be rebuilt after a source change.
 
-## 7. Evidence
-
-Add screenshots or logs after verification:
-
-- Boot screenshot: Pending
-- User-space command screenshot: Pending
-- Rebuild verification: Pending
-
-## 8. Notes
+## 7. Notes
 
 The GCC version above is the default compiler installed on the Ubuntu host. The actual compiler used to build xv6-riscv may be a RISC-V cross-compiler selected by the project's Makefile.
 
