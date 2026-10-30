@@ -8,7 +8,7 @@ main(void)
 {
     hello();
 
-    printf("user: hello() returned, back in user mode\n");
+    printf("NguyenAnhTuan_20233698 hello\n Task 1 week 1\n");
 
     exit(0);
 }
