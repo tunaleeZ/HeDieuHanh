@@ -148,6 +148,7 @@ def recover_log():
 
 def forphan():
     q = QEMU(True)
+    q.monitor(r'^\$ ', timeout=30)
     q.cmd("forphan\n")
     q.monitor('wait', timeout=30)
     q.crash()
@@ -155,6 +156,7 @@ def forphan():
 
 def dorphan():
     q = QEMU(True)
+    q.monitor(r'^\$ ', timeout=30)
     q.cmd("dorphan\n")
     q.monitor('wait', timeout=30)
     q.crash()
