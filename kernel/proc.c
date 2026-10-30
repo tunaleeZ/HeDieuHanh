@@ -215,6 +215,11 @@ found:
 static void
 freeproc(struct proc *p)
 {
+  // Release the process slot from its container.
+  if (p->container != 0) {
+    container_release(p->container);
+    p->container = 0;
+  }
   if (p->trapframe)
     kfree((void *)p->trapframe);
   p->trapframe = 0;
