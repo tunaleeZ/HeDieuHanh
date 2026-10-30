@@ -68,7 +68,7 @@ procinit(void)
 
   // Initialize host container (container 0).
   containers[0].active = 1;
-  containers[0].max_proc = 0;  // Unlimited processes.
+  containers[0].max_proc = 0; // Unlimited processes.
 
   // Initialize process table.
   for (p = proc; p < &proc[NPROC]; p++) {

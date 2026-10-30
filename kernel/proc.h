@@ -83,11 +83,11 @@ enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Container structure.
 struct container {
-  int id;                 // Container ID
-  int proc_count;          // Number of processes in container
-  int max_proc;            // Maximum number of processes (0 = unlimited)
-  int active;              // Whether this container is active
-  struct spinlock lock;    // Protect container data
+  int id;               // Container ID
+  int proc_count;       // Number of processes in container
+  int max_proc;         // Maximum number of processes (0 = unlimited)
+  int active;           // Whether this container is active
+  struct spinlock lock; // Protect container data
 };
 
 // Per-process state
