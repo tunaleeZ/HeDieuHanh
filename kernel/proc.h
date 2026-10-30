@@ -78,6 +78,18 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+// Lightweight container configuration.
+#define NCONTAINER 8
+
+// Container structure.
+struct container {
+  int id;                 // Container ID
+  int proc_count;          // Number of processes in container
+  int max_proc;            // Maximum number of processes (0 = unlimited)
+  int active;              // Whether this container is active
+  struct spinlock lock;    // Protect container data
+};
+
 // Per-process state
 struct proc {
   struct spinlock lock;
@@ -100,5 +112,6 @@ struct proc {
   struct context context;      // swtch() here to run process
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
+  struct container *container; // Container this process belongs to
   char name[16];               // Process name (debugging)
 };
