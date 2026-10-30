@@ -114,9 +114,10 @@ sys_uptime(void)
 uint64
 sys_hello(void)
 {
-    struct proc *p = myproc();
+  struct proc *p = myproc();
 
-    printk("kernel: hello() called by pid %d (running in kernel)\n", p->pid); //do trong defs.h dung printk, khong co printf
+  printk("kernel: hello() called by pid %d (running in kernel)\n",
+         p->pid); //do trong defs.h dung printk, khong co printf
 
-    return 0;
+  return 0;
 }

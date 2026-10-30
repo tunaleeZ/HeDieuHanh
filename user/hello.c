@@ -6,10 +6,9 @@
 int
 main(void)
 {
-    hello();
+  hello();
 
-    printf("NguyenAnhTuan_20233698 hello\n Task 1 week 1\n");
+  printf("NguyenAnhTuan_20233698 hello\n Task 1 week 1\n");
 
-    exit(0);
+  exit(0);
 }
-
