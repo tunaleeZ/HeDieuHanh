@@ -145,6 +145,7 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->container = 0; //reset
 
   // Allocate a trapframe page.
   if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
@@ -244,6 +245,9 @@ userinit(void)
   p = allocproc();
   initproc = p;
 
+  // Assign the first process to host container.
+  p->container = &containers[0];
+
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
@@ -287,6 +291,9 @@ kfork(void)
   if ((np = allocproc()) == 0) {
     return -1;
   }
+
+  // Inherit container from parent.
+  np->container = p->container;
 
   // Copy user memory from parent to child.
   if (uvmcopy(p->pagetable, np->pagetable, p->sz) < 0) {
@@ -707,18 +714,27 @@ procdump(void)
     [ZOMBIE]    = "zombie"
     // clang-format on
   };
+
   struct proc *p;
   char *state;
+  int container_id;
 
   printk("\n");
+
   for (p = proc; p < &proc[NPROC]; p++) {
     if (p->state == UNUSED)
       continue;
+
     if (p->state >= 0 && p->state < NELEM(states) && states[p->state])
       state = states[p->state];
     else
       state = "???";
-    printk("%d %s %s", p->pid, state, p->name);
-    printk("\n");
+
+    container_id = -1; // process chua duoc gan container
+
+    if (p->container != 0)
+      container_id = p->container->id;
+
+    printk("%d %s %s container=%d\n", p->pid, state, p->name, container_id);
   }
 }
