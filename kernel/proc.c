@@ -29,6 +29,44 @@ extern char trampoline[]; // trampoline.S
 // must be acquired before any p->lock.
 struct spinlock wait_lock;
 
+// Reserve one process slot in a container.
+// Return 0 on success, -1 if the quota is exceeded.
+static int
+container_reserve(struct container *c)
+{
+  if (c == 0)
+    return -1;
+
+  acquire(&c->lock);
+
+  if (!c->active || (c->max_proc > 0 && c->proc_count >= c->max_proc)) {
+    release(&c->lock);
+    return -1;
+  }
+
+  c->proc_count++;
+
+  release(&c->lock);
+  return 0;
+}
+
+// Release one reserved process slot.
+static void
+container_release(struct container *c)
+{
+  if (c == 0)
+    return;
+
+  acquire(&c->lock);
+
+  if (c->proc_count <= 0)
+    panic("container proc_count underflow");
+
+  c->proc_count--;
+
+  release(&c->lock);
+}
+
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
 // guard page.
@@ -245,7 +283,10 @@ userinit(void)
   p = allocproc();
   initproc = p;
 
-  // Assign the first process to host container.
+  // Assign init process to host container.
+  if (container_reserve(&containers[0]) < 0)
+    panic("userinit container");
+
   p->container = &containers[0];
 
   p->cwd = namei("/");
@@ -287,8 +328,14 @@ kfork(void)
   struct proc *np;
   struct proc *p = myproc();
 
+  // Reserve a process slot in the parent's container.
+  if (container_reserve(p->container) < 0) {
+    return -1;
+  }
+
   // Allocate process.
   if ((np = allocproc()) == 0) {
+    container_release(p->container);
     return -1;
   }
 
@@ -297,6 +344,9 @@ kfork(void)
 
   // Copy user memory from parent to child.
   if (uvmcopy(p->pagetable, np->pagetable, p->sz) < 0) {
+    container_release(np->container);
+    np->container = 0; //xu ly rollback
+
     freeproc(np);
     release(&np->lock);
     return -1;
