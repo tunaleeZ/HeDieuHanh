@@ -10,6 +10,9 @@ struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];
 
+// Static container table.
+static struct container containers[NCONTAINER];
+
 struct proc *initproc;
 
 int nextpid = 1;
@@ -43,18 +46,36 @@ proc_mapstacks(pagetable_t kpgtbl)
   }
 }
 
-// initialize the proc table.
+// Initialize the process table and container table.
 void
 procinit(void)
 {
   struct proc *p;
+  int i;
 
   initlock(&pid_lock, "nextpid");
   initlock(&wait_lock, "wait_lock");
+
+  // Initialize container table.
+  for (i = 0; i < NCONTAINER; i++) {
+    initlock(&containers[i].lock, "container");
+
+    containers[i].id = i;
+    containers[i].proc_count = 0;
+    containers[i].max_proc = 0;
+    containers[i].active = 0;
+  }
+
+  // Initialize host container (container 0).
+  containers[0].active = 1;
+  containers[0].max_proc = 0;  // Unlimited processes.
+
+  // Initialize process table.
   for (p = proc; p < &proc[NPROC]; p++) {
     initlock(&p->lock, "proc");
     p->state = UNUSED;
     p->kstack = KSTACK((int)(p - proc));
+    p->container = 0;
   }
 }
 
