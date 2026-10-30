@@ -9,6 +9,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+struct container_info;
 
 // bio.c
 void            binit(void);
@@ -103,6 +104,9 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
+int             kcontainer_create(int);
+int             kcontainer_enter(int);
+int             kcontainer_info(int, struct container_info *);
 
 // swtch.S
 void            swtch(struct context*, struct context*);

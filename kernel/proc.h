@@ -90,6 +90,14 @@ struct container {
   struct spinlock lock; // Protect container data
 };
 
+// Information returned to user space.
+struct container_info {
+  int id;
+  int proc_count;
+  int max_proc;
+  int active;
+};
+
 // Per-process state
 struct proc {
   struct spinlock lock;

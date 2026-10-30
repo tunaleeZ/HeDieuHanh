@@ -793,3 +793,98 @@ procdump(void)
     printk("%d %s %s container=%d\n", p->pid, state, p->name, container_id);
   }
 }
+
+// Create a new container.
+// Return container ID on success, -1 on failure.
+int
+kcontainer_create(int max_proc)
+{
+  int i;
+
+  if (max_proc < 0)
+    return -1;
+
+  for (i = 1; i < NCONTAINER; i++) {
+    acquire(&containers[i].lock);
+
+    if (!containers[i].active) {
+      containers[i].id = i;
+      containers[i].proc_count = 0;
+      containers[i].max_proc = max_proc;
+      containers[i].active = 1;
+
+      release(&containers[i].lock);
+      return i;
+    }
+
+    release(&containers[i].lock);
+  }
+
+  return -1;
+}
+
+// Move the current process into another container.
+// Return 0 on success, -1 on failure.
+int
+kcontainer_enter(int id)
+{
+  struct proc *p;
+  struct container *old;
+  struct container *new;
+
+  if (id < 0 || id >= NCONTAINER)
+    return -1;
+
+  p = myproc();
+
+  if (p == 0 || p->container == 0)
+    return -1;
+
+  old = p->container;
+  new = &containers[id];
+
+  // Already belongs to the target container.
+  if (old == new)
+    return 0;
+
+  // Reserve quota in the new container first.
+  if (container_reserve(new) < 0)
+    return -1;
+
+  // Switch container.
+  p->container = new;
+
+  // Release quota in the old container.
+  container_release(old);
+
+  return 0;
+}
+
+// Get information about a container.
+// Return 0 on success, -1 on failure.
+int
+kcontainer_info(int id, struct container_info *info)
+{
+  struct container *c;
+
+  if (id < 0 || id >= NCONTAINER || info == 0)
+    return -1;
+
+  c = &containers[id];
+
+  acquire(&c->lock);
+
+  if (!c->active) {
+    release(&c->lock);
+    return -1;
+  }
+
+  info->id = c->id;
+  info->proc_count = c->proc_count;
+  info->max_proc = c->max_proc;
+  info->active = c->active;
+
+  release(&c->lock);
+
+  return 0;
+}

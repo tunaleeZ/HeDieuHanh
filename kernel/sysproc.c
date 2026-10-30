@@ -121,3 +121,45 @@ sys_hello(void)
 
   return 0;
 }
+
+uint64
+sys_cont_create(void)
+{
+  int max_proc;
+
+  argint(0, &max_proc);
+
+  return kcontainer_create(max_proc);
+}
+
+uint64
+sys_cont_enter(void)
+{
+  int id;
+
+  argint(0, &id);
+
+  return kcontainer_enter(id);
+}
+
+uint64
+sys_cont_info(void)
+{
+  int id;
+  uint64 addr;
+  struct proc *p;
+  struct container_info info;
+
+  argint(0, &id);
+  argaddr(1, &addr);
+
+  if (kcontainer_info(id, &info) < 0)
+    return -1;
+
+  p = myproc();
+
+  if (copyout(p->pagetable, p->sz, addr, (char *)&info, sizeof(info)) < 0)
+    return -1;
+
+  return 0;
+}

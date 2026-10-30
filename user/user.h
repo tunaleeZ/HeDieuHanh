@@ -2,6 +2,13 @@
 
 struct stat;
 
+struct container_info {
+  int id;
+  int proc_count;
+  int max_proc;
+  int active;
+};
+
 // system calls
 int fork(void);
 int exit(int) __attribute__((noreturn));
@@ -26,6 +33,9 @@ int pause(int);
 int uptime(void);
 int sync(void);
 int hello(void);
+int cont_create(int max_proc);
+int cont_enter(int id);
+int cont_info(int id, struct container_info *info);
 
 // ulib.c
 int stat(const char *, struct stat *);

@@ -44,3 +44,6 @@ entry("pause");
 entry("uptime");
 entry("sync");
 entry("hello");
+entry("cont_create");
+entry("cont_enter");
+entry("cont_info");
