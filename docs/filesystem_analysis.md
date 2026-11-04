@@ -120,3 +120,115 @@ A container filesystem design must therefore consider:
 5. Auditing all path-based system calls, including file creation, deletion, linking, directory changes and executable loading.
 
 These points are design proposals only. No filesystem isolation mechanism has been implemented yet.
+
+## 10. Complete Path Resolution and Root Dependency Analysis
+
+### 10.1. Global Root Dependency
+
+The inspected implementation in `kernel/fs.c` uses `iget(ROOTDEV, ROOTINO)` as the starting inode for absolute paths.
+
+Relative paths start from `idup(myproc()->cwd)`.
+
+The direct dependency on `ROOTDEV` and `ROOTINO` is located in `namex()`, making this function the primary modification point for process-specific filesystem root support.
+
+### 10.2. Path Resolution Entry Points
+
+| Function | Responsibility | Root-related consideration |
+|---|---|---|
+| `namex()` | Core pathname resolution | Must use process root and enforce the root boundary |
+| `namei()` | Resolve a complete pathname | Inherits behavior from `namex()` |
+| `nameiparent()` | Resolve the parent directory | Must respect root restrictions during traversal |
+| `skipelem()` | Extract pathname components | No root-specific modification required |
+
+### 10.3. Path-Based System Call Dependencies
+
+The complete inspection identifies the following dependencies:
+
+| Function | Path resolution mechanism |
+|---|---|
+| `sys_link()` | `namei(old)` and `nameiparent(new, name)` |
+| `sys_unlink()` | `nameiparent(path, name)` |
+| `create()` | `nameiparent(path, name)` |
+| `sys_open()` | `namei(path)` or `create()` |
+| `sys_mkdir()` | `create()` |
+| `sys_mknod()` | `create()` |
+| `sys_chdir()` | `namei(path)` |
+| `sys_exec()` | Passes executable path to `kexec()` |
+| `kexec()` | `namei(path)` |
+
+These operations rely on the shared pathname resolution mechanism. Modifying `namex()` can therefore enforce process root restrictions across these operations without implementing separate path-resolution logic in every system call.
+
+### 10.4. Process Root and Working Directory Management
+
+The current `struct proc` contains a `cwd` inode pointer but no explicit root inode pointer.
+
+The following locations require modification:
+
+| Location | Existing behavior | Required change |
+|---|---|---|
+| `userinit()` | Initializes `cwd` using `namei("/")` | Initialize process root |
+| `kfork()` | Inherits `cwd` using `idup()` | Inherit root reference using `idup()` |
+| `kexit()` | Releases `cwd` using `iput()` | Release root reference |
+| `sys_chdir()` | Replaces `cwd` | Ensure the new cwd remains within process root |
+| `freeproc()` | Releases process resources | Verify root reference cleanup on allocation failures |
+
+Inode reference management must follow the existing `idup()` and `iput()` mechanisms. Calls to `iput()` must remain inside filesystem transactions using `begin_op()` and `end_op()`.
+
+### 10.5. Root Boundary Enforcement
+
+The proposed pathname resolution mechanism must enforce the following rules:
+
+1. Absolute paths must start from the current process root.
+2. Relative paths must start from the current working directory.
+3. When the current directory inode matches the process root inode, resolving `..` must not move to its parent.
+4. Inode identity must be checked using both `dev` and `inum`.
+5. Parent-directory lookup must preserve the existing `nameiparent()` semantics.
+
+Boundary test cases include:
+
+- `chdir("..")` while already at the process root.
+- Resolving `a/../../..`.
+- Resolving `/../..`.
+- Resolving relative paths containing multiple `..` components.
+- Using `nameiparent()` with a final `..` component.
+
+### 10.6. Executable Loading
+
+`kexec()` resolves executable paths using `namei()`.
+
+Consequently, executable loading must use the process-specific root. Both absolute and relative executable paths must obey the same restrictions as ordinary file access.
+
+No independent root-resolution mechanism is required in the ELF loading functions.
+
+## 11. Implementation Plan for SCRUM-62
+
+| Task | Planned implementation | Expected output |
+|---|---|---|
+| 62.1 | Review pathname resolution and syscall dependencies | Filesystem analysis document |
+| 62.2 | Add root inode to `struct proc`; initialize, inherit and release references | Kernel code |
+| 62.3 | Modify absolute pathname resolution in `namex()` | Kernel code |
+| 62.4 | Prevent traversal above process root using `..` | Kernel code and boundary cases |
+| 62.5 | Implement a chroot-style system call | Kernel and user-space syscall interfaces |
+| 62.6 | Prepare a test root filesystem with minimal binaries | Reproducible setup instructions |
+| 62.7 | Implement pathname boundary tests | `user/roottest.c` and PASS/FAIL results |
+| 62.8 | Run tests and collect evidence | Test report and Jira update |
+
+### 11.1. Expected Test Coverage
+
+The implementation should verify:
+
+- Absolute path access within the process root.
+- Relative path access from the current working directory.
+- Prevention of traversal above the process root.
+- Correct behavior of `chdir("..")` at the root boundary.
+- Successful execution of binaries inside the process root.
+- Failed execution of binaries outside the process root.
+- Failed access to files located outside the process root.
+
+### 11.2. Current Status
+
+The source-code review has identified the main pathname resolution mechanism, all relevant path-based system call dependencies, and the process inode reference management locations.
+
+No SCRUM-62 implementation changes have been made at this stage.
+
+The next step is to implement process root inode management in `struct proc` and update the corresponding process lifecycle functions.
