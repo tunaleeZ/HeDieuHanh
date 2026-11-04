@@ -455,6 +455,55 @@ sys_chdir(void)
   return 0;
 }
 
+
+uint64
+sys_chroot(void)
+{
+  char path[MAXPATH];
+  struct inode *ip;
+  struct inode *oldroot, *oldcwd;
+  struct proc *p = myproc();
+
+  // Fetch path from user space.
+  if (argstr(0, path, MAXPATH) < 0)
+    return -1;
+
+  begin_op();
+
+  // Resolve the new root directory.
+  if ((ip = namei(path)) == 0) {
+    end_op();
+    return -1;
+  }
+
+  // The new root must be a directory.
+  ilock(ip);
+  if (ip->type != T_DIR) {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+  iunlock(ip);
+
+  // Save old references.
+  oldroot = p->root;
+  oldcwd = p->cwd;
+
+  // Install the new root and set cwd to the same directory.
+  // namei() returned one reference for root; idup() adds one for cwd.
+  p->root = ip;
+  p->cwd = idup(ip);
+
+  // Release the old root and cwd references.
+  iput(oldcwd);
+  iput(oldroot);
+
+  end_op();
+
+  return 0;
+}
+
+
 uint64
 sys_exec(void)
 {

@@ -36,6 +36,7 @@ int hello(void);
 int cont_create(int max_proc);
 int cont_enter(int id);
 int cont_info(int id, struct container_info *info);
+int chroot(const char *);
 
 // ulib.c
 int stat(const char *, struct stat *);

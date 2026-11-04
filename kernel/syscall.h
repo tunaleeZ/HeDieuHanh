@@ -25,3 +25,4 @@
 #define SYS_cont_create 24
 #define SYS_cont_enter  25
 #define SYS_cont_info   26
+#define SYS_chroot      27

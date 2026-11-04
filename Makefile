@@ -153,6 +153,7 @@ UPROGS=\
 	$U/_sync\
 	$U/_hello\
 	$U/_ctest\
+	$U/_chroottest\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
