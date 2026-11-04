@@ -227,8 +227,18 @@ The implementation should verify:
 
 ### 11.2. Current Status
 
-The source-code review has identified the main pathname resolution mechanism, all relevant path-based system call dependencies, and the process inode reference management locations.
+The source-code review and the repository state confirm that the SCRUM-62 implementation has been applied in the current branch.
 
-No SCRUM-62 implementation changes have been made at this stage.
+The current kernel already includes:
 
-The next step is to implement process root inode management in `struct proc` and update the corresponding process lifecycle functions.
+- a per-process root inode in `struct proc`
+- initialization in `userinit()` and inheritance in `kfork()`
+- cleanup of both `cwd` and `root` in `kexit()`
+- root-aware absolute path resolution in `namex()`
+- a guard that prevents `..` from traversing above the process root
+- a `chroot()` syscall and user-space declarations
+- a user-space path-boundary validation program (`roottest`)
+
+The relevant implementation points are in `kernel/proc.h`, `kernel/proc.c`, `kernel/fs.c`, `kernel/sysfile.c`, `kernel/syscall.h`, and `user/roottest.c`.
+
+This means the design work is no longer only a proposal; the repository already reflects the implemented path-boundary and process-root enforcement behavior.
