@@ -724,6 +724,16 @@ namex(char *path, int nameiparent, char *name)
       iunlock(ip);
       return ip;
     }
+
+    // Prevent escaping the process root through "..".
+    if (p != 0 && p->root != 0 &&
+      name[0] == '.' && name[1] == '.' && name[2] == '\0' &&
+      ip->dev == p->root->dev && ip->inum == p->root->inum) {
+    // Already at the process root: stay here.
+    iunlock(ip);
+    continue;
+    }
+
     if ((next = dirlookup(ip, name, 0)) == 0) {
       iunlockput(ip);
       return 0;
