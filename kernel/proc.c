@@ -184,6 +184,7 @@ found:
   p->pid = allocpid();
   p->state = USED;
   p->container = 0; //reset
+  p->root = 0;
 
   // Allocate a trapframe page.
   if ((p->trapframe = (struct trapframe *)kalloc()) == 0) {
@@ -296,6 +297,13 @@ userinit(void)
 
   p->cwd = namei("/");
 
+  if (p->cwd == 0)
+    panic("userinit cwd");
+
+  // Root directory initially points to the filesystem root.
+  // Keep an independent inode reference from cwd.
+  p->root = idup(p->cwd);
+
   p->state = RUNNABLE;
 
   release(&p->lock);
@@ -368,7 +376,10 @@ kfork(void)
   for (i = 0; i < NOFILE; i++)
     if (p->ofile[i])
       np->ofile[i] = filedup(p->ofile[i]);
+
+  // Inherit current working directory and root directory.
   np->cwd = idup(p->cwd);
+  np->root = idup(p->root);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
@@ -424,8 +435,11 @@ kexit(int status)
 
   begin_op();
   iput(p->cwd);
+  iput(p->root);
   end_op();
+
   p->cwd = 0;
+  p->root = 0;
 
   acquire(&wait_lock);
 
