@@ -692,11 +692,22 @@ static struct inode *
 namex(char *path, int nameiparent, char *name)
 {
   struct inode *ip, *next;
+  struct proc *p;
 
-  if (*path == '/')
-    ip = iget(ROOTDEV, ROOTINO);
-  else
-    ip = idup(myproc()->cwd);
+  p = myproc();
+
+  if (*path == '/') {
+    // During bootstrap, there may be no current process.
+    // Use the filesystem root in that case.
+    if (p == 0 || p->root == 0)
+      ip = iget(ROOTDEV, ROOTINO);
+    else
+      ip = idup(p->root);
+  } else {
+    if (p == 0)
+      panic("namex: no current process");
+    ip = idup(p->cwd);
+  }
 
   while ((path = skipelem(path, name)) != 0) {
     ilock(ip);
