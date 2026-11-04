@@ -455,7 +455,6 @@ sys_chdir(void)
   return 0;
 }
 
-
 uint64
 sys_chroot(void)
 {
@@ -502,7 +501,6 @@ sys_chroot(void)
 
   return 0;
 }
-
 
 uint64
 sys_exec(void)
