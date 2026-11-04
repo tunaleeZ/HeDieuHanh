@@ -48,3 +48,4 @@ entry("cont_create");
 entry("cont_enter");
 entry("cont_info");
 entry("chroot");
+entry("sysinfo");

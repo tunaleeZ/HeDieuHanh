@@ -37,7 +37,8 @@ int cont_create(int max_proc);
 int cont_enter(int id);
 int cont_info(int id, struct container_info *info);
 int chroot(const char *);
-
+struct sysinfo;
+int sysinfo(struct sysinfo *);
 // ulib.c
 int stat(const char *, struct stat *);
 char *strcpy(char *, const char *);

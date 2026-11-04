@@ -100,6 +100,8 @@ void            sleep(void);
 void            userinit(void);
 int             kwait(uint64);
 void            wakeup(void*);
+uint64          kfreemem(void);
+uint64          knproc(void);
 void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
@@ -154,7 +156,6 @@ void            uartinit(void);
 void            uartintr(void);
 void            uartwrite(char [], int);
 void            uartputc_sync(int);
-
 // vm.c
 void            kvminit(void);
 void            kvminithart(void);

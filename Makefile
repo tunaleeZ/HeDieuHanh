@@ -131,6 +131,10 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
 .PRECIOUS: %.o
 
 UPROGS=\
+	$U/_bench_proc\
+	$U/_bench_mem\
+	$U/_bench_cpu\
+	$U/_copyfile\
 	$U/_cat\
 	$U/_echo\
 	$U/_forktest\
@@ -155,7 +159,7 @@ UPROGS=\
 	$U/_ctest\
 	$U/_chroottest\
 	$U/_roottest\
-
+	$U/_test_sysinfo
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
 

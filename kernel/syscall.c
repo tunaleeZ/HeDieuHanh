@@ -79,7 +79,7 @@ argstr(int n, char *buf, int max)
   argaddr(n, &addr);
   return fetchstr(addr, buf, max);
 }
-
+extern uint64 sys_sysinfo(void);
 // Prototypes for the functions that handle system calls.
 extern uint64 sys_fork(void);
 extern uint64 sys_exit(void);
@@ -141,6 +141,7 @@ static uint64 (*syscalls[])(void) = {
   [SYS_cont_info]   = sys_cont_info,
   [SYS_chroot]  = sys_chroot,
   // clang-format on
+  [SYS_sysinfo]     sys_sysinfo,
 };
 
 void
