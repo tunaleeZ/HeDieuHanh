@@ -1,0 +1,33 @@
+Script started on 2026-11-05 00:21:49+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 2 starting
+hart 1 starting
+init: starting sh
+$ mkdir c1
+$ echo hello > c1/test.txt
+$ echo secret > outside.txt
+$ copyfile /echo /c1/echo
+Copy completed
+$ roottest
+=== ROOT DIRECTORY TEST ===
+PASS: chroot /c1
+PASS: chdir /
+PASS: open /test.txt
+PASS: open test.txt
+PASS: open /../test.txt
+PASS: open /../../test.txt
+PASS: blocked /outside.txt
+PASS: blocked /../outside.txt
+PASS: blocked /../../outside.txt
+PASS: chdir .. at root
+PASS: open test.txt
+INSIDE_EXEC_OK
+PASS: exec inside root
+PASS: blocked exec outside root
+=== ROOT TEST FINISHED ===
+$ QEMU: Terminated
+
+Script done on 2026-11-05 00:22:50+07:00 [COMMAND_EXIT_CODE="0"]
