@@ -167,12 +167,16 @@ sys_cont_info(void)
 uint64
 sys_cont_set_cpu(void)
 {
+  if (!container_is_host())
+    return -1;
   return -1;
 }
 
 uint64
 sys_cont_set_mem(void)
 {
+  if (!container_is_host())
+    return -1;
   return -1;
 }
 

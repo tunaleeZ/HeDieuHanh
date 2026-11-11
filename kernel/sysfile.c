@@ -463,6 +463,9 @@ sys_chroot(void)
   struct inode *oldroot, *oldcwd;
   struct proc *p = myproc();
 
+  if (!container_is_host())
+    return -1;
+
   // Fetch path from user space.
   if (argstr(0, path, MAXPATH) < 0)
     return -1;
@@ -508,6 +511,9 @@ sys_cont_setroot(void)
   int id;
   char path[MAXPATH];
   struct inode *ip;
+
+  if (!container_is_host())
+    return -1;
 
   argint(0, &id);
   if (argstr(1, path, MAXPATH) < 0)

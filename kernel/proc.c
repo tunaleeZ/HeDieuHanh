@@ -155,6 +155,15 @@ myproc(void)
   return p;
 }
 
+// Return whether the current process belongs to the host container.
+int
+container_is_host(void)
+{
+  struct proc *p = myproc();
+
+  return p != 0 && p->container != 0 && p->container->id == 0;
+}
+
 int
 allocpid()
 {
@@ -822,6 +831,9 @@ kcontainer_create(int max_proc)
 {
   int i;
 
+  if (!container_is_host())
+    return -1;
+
   if (max_proc < 0)
     return -1;
 
@@ -861,6 +873,9 @@ kcontainer_enter(int id)
   struct container *new;
   struct inode *root;
   struct inode *oldroot, *oldcwd;
+
+  if (!container_is_host())
+    return -1;
 
   if (id < 0 || id >= NCONTAINER)
     return -1;
@@ -915,6 +930,9 @@ int
 kcontainer_setroot(int id, struct inode *root)
 {
   struct container *c;
+
+  if (!container_is_host())
+    return -1;
 
   if (id < 0 || id >= NCONTAINER || root == 0)
     return -1;
