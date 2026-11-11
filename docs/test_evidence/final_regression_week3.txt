@@ -1,0 +1,33 @@
+Final regression after SCRUM-85/86/87 changes
+Build from clean tree: `make clean`, `make`, `make fs.img` — PASS.
+QEMU 10.2.1, virt, 128M, -smp 3. One fresh boot for this regression set.
+
+ptest_neg:
+=== PERMISSION TEST FINISHED: 0 failures ===
+All host-only administration denial checks and public cont_info checks PASS.
+
+ctest:
+PASS: max_pages read back through cont_info
+PASS: negative memory quota rejected
+PASS: container cannot configure memory quota
+PASS: negative process limit rejected
+PASS: fork succeeded after quota release
+=== Container Test Finished: 0 failures ===
+
+setupc1:
+PASS: /c1 root fixture ready
+
+roottest:
+All path containment, root ownership, fork, exec, create/link/unlink and final
+`..` tests reported PASS.
+=== ROOT TEST FINISHED: 0 failures ===
+
+chroottest /c1:
+Changing root to: /c1
+chroot succeeded
+chdir to new root succeeded
+
+test_sysinfo:
+Free memory: 133255168 bytes
+Used process slots: 3
+PASS: sysinfo syscall

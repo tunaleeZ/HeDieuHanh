@@ -1,0 +1,26 @@
+SCRUM-87 benchmark round 3; fresh QEMU boot; QEMU 10.2.1, virt, 128M, -smp 3
+Commands in order: bench_cpu, bench_mem, bench_proc
+
+$ bench_cpu
+=== CPU BENCHMARK ===
+Elapsed ticks: 100
+Iterations: 598448
+Iterations/tick: 5984
+$ bench_mem
+=== MEMORY BENCHMARK ===
+Free memory before: 133255168 bytes
+Free memory after: 133124096 bytes
+Free memory released: 133255168 bytes
+Memory used: 131072 bytes
+Memory recovered: 131072 bytes
+$ bench_proc
+=== PROCESS BENCHMARK ===
+Fork attempts: 100
+Successful forks: 100
+Failed forks: 0
+Elapsed ticks: 2
+Process slots before: 3
+Process slots after: 3
+Free memory before: 133255168
+Free memory after: 133255168
+PASS: process benchmark
