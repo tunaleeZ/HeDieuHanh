@@ -37,3 +37,46 @@ Root cause has not been confirmed.
 - Remaining regression tests: NOT RUN in latest session
 
 No additional defects have been confirmed.
+## Week 3 - DEFECT-01 Retest (2026-11-11)
+
+### Test environment
+- OS: Ubuntu
+- Emulator: QEMU
+- Target: xv6-riscv
+- CPU: 3 harts
+- Branch: main
+
+### Regression test
+
+Command: usertests -q
+
+Result: PASS
+
+Output:
+- usertests starting
+- ALL TESTS PASSED
+
+### DEFECT-01 verification
+
+Searched for:
+- exec xv6 failed
+- exec init: failed
+
+Result:
+- Neither error was found in the new regression log.
+- No kernel panic was found in the checked output.
+- Shell remained operational during the test.
+
+### Conclusion
+
+Status: NOT REPRODUCED IN THIS SESSION
+
+The console input issue was not reproduced in the
+2026-11-11 regression session.
+
+Root cause remains unconfirmed.
+Do not mark this defect as permanently resolved.
+
+### Evidence
+
+docs/test_evidence/scrum88_full_regression.log
