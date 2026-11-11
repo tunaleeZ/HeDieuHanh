@@ -163,6 +163,25 @@ sys_cont_info(void)
 
   return 0;
 }
+
+uint64
+sys_cont_setroot(void)
+{
+  return -1;
+}
+
+uint64
+sys_cont_set_cpu(void)
+{
+  return -1;
+}
+
+uint64
+sys_cont_set_mem(void)
+{
+  return -1;
+}
+
 uint64
 sys_sysinfo(void)
 {

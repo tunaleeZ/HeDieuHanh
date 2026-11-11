@@ -102,6 +102,13 @@ procinit(void)
     containers[i].proc_count = 0;
     containers[i].max_proc = 0;
     containers[i].active = 0;
+    containers[i].root = 0;
+    containers[i].cpu_period_ticks = CPU_DEFAULT_PERIOD;
+    containers[i].cpu_quota_ticks = 0;
+    containers[i].cpu_used_ticks = 0;
+    containers[i].cpu_period_start = 0;
+    containers[i].max_pages = 0;
+    containers[i].pages_used = 0;
   }
 
   // Initialize host container (container 0).
@@ -826,6 +833,13 @@ kcontainer_create(int max_proc)
       containers[i].proc_count = 0;
       containers[i].max_proc = max_proc;
       containers[i].active = 1;
+      containers[i].root = 0;
+      containers[i].cpu_period_ticks = CPU_DEFAULT_PERIOD;
+      containers[i].cpu_quota_ticks = 0;
+      containers[i].cpu_used_ticks = 0;
+      containers[i].cpu_period_start = 0;
+      containers[i].max_pages = 0;
+      containers[i].pages_used = 0;
 
       release(&containers[i].lock);
       return i;
@@ -897,6 +911,11 @@ kcontainer_info(int id, struct container_info *info)
   info->proc_count = c->proc_count;
   info->max_proc = c->max_proc;
   info->active = c->active;
+  info->cpu_period_ticks = c->cpu_period_ticks;
+  info->cpu_quota_ticks = c->cpu_quota_ticks;
+  info->cpu_used_ticks = c->cpu_used_ticks;
+  info->max_pages = c->max_pages;
+  info->pages_used = c->pages_used;
 
   release(&c->lock);
 

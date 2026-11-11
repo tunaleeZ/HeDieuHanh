@@ -27,3 +27,6 @@
 #define SYS_cont_info   26
 #define SYS_chroot      27
 #define SYS_sysinfo     28
+#define SYS_cont_setroot 29
+#define SYS_cont_set_cpu 30
+#define SYS_cont_set_mem 31

@@ -1,0 +1,24 @@
+SCRUM-89 Sub-task 8.2: Tag baseline and push shared skeleton
+Baseline: b48ec1891d58f6e809067a1ab80f3392fcc9ca8f
+Local tag: week2-stable -> b48ec1891d58f6e809067a1ab80f3392fcc9ca8f
+QEMU: 10.2.1 (Debian 1:10.2.1+ds-1ubuntu3.2), 3 harts, 128M
+
+PASS: syscall-number uniqueness
+Command: awk '/^#define SYS_/ {print $3}' kernel/syscall.h | sort | uniq -d
+Output: no duplicate values
+
+PASS: make clean (exit 0)
+PASS: make (exit 0; kernel compiled and linked; linker emitted existing RWX LOAD segment warning)
+PASS: make fs.img (exit 0; all configured user programs compiled and filesystem image created)
+
+PASS: ctest (QEMU timeout wrapper; command completed, QEMU exited cleanly)
+Observed: negative process limit rejected; quota stopped the third child; both children reaped; fork succeeded after quota release; "Container Test Finished".
+
+PASS: roottest fixture and test (QEMU timeout wrapper; command completed, QEMU exited cleanly)
+Fixture: mkdir c1; echo hello > c1/test.txt; echo secret > outside.txt; copyfile /echo /c1/echo
+Observed: root chroot/chdir, inside opens, parent traversal boundary, outside access blocking, inside exec, and outside exec blocking all reported PASS; "ROOT TEST FINISHED".
+
+PASS: test_sysinfo (QEMU timeout wrapper; command completed, QEMU exited cleanly)
+Observed: "PASS: sysinfo syscall" (free memory 133255168 bytes; process slots 3).
+
+No historical test evidence was modified.

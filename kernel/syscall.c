@@ -108,6 +108,9 @@ extern uint64 sys_cont_create(void);
 extern uint64 sys_cont_enter(void);
 extern uint64 sys_cont_info(void);
 extern uint64 sys_chroot(void);
+extern uint64 sys_cont_setroot(void);
+extern uint64 sys_cont_set_cpu(void);
+extern uint64 sys_cont_set_mem(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -140,6 +143,9 @@ static uint64 (*syscalls[])(void) = {
   [SYS_cont_enter]  = sys_cont_enter,
   [SYS_cont_info]   = sys_cont_info,
   [SYS_chroot]  = sys_chroot,
+  [SYS_cont_setroot] = sys_cont_setroot,
+  [SYS_cont_set_cpu] = sys_cont_set_cpu,
+  [SYS_cont_set_mem] = sys_cont_set_mem,
   // clang-format on
   [SYS_sysinfo]     sys_sysinfo,
 };

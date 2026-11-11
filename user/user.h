@@ -7,6 +7,11 @@ struct container_info {
   int proc_count;
   int max_proc;
   int active;
+  uint64 cpu_period_ticks;
+  uint64 cpu_quota_ticks;
+  uint64 cpu_used_ticks;
+  int max_pages;
+  int pages_used;
 };
 
 // system calls
@@ -36,6 +41,9 @@ int hello(void);
 int cont_create(int max_proc);
 int cont_enter(int id);
 int cont_info(int id, struct container_info *info);
+int cont_setroot(int, const char *);
+int cont_set_cpu(int, int, int);
+int cont_set_mem(int, int);
 int chroot(const char *);
 struct sysinfo;
 int sysinfo(struct sysinfo *);

@@ -49,3 +49,6 @@ entry("cont_enter");
 entry("cont_info");
 entry("chroot");
 entry("sysinfo");
+entry("cont_setroot");
+entry("cont_set_cpu");
+entry("cont_set_mem");
