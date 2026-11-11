@@ -897,7 +897,9 @@ kcontainer_enter(int id)
     return -1;
 
   // Switch container.
+  acquire(&p->lock);
   p->container = new;
+  release(&p->lock);
 
   // Release quota in the old container.
   container_release(old);
