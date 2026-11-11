@@ -159,6 +159,7 @@ UPROGS=\
 	$U/_ctest\
 	$U/_chroottest\
 	$U/_roottest\
+	$U/_outsideexec\
 	$U/_test_sysinfo
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
