@@ -90,9 +90,9 @@ Thử nghiệm cấp phát 32 trang, mỗi trang 4096 byte.
 
 ## 7. Thiết kế memory quota theo container
 
-Phần này chốt cách đếm trang user cho memory quota; chưa triển khai helper hoặc thay đổi đường cấp phát trong kernel. Đơn vị quota là trang 4 KB. `max_pages == 0` nghĩa là không giới hạn. Chỉ tính trang vật lý user-space đã cấp phát thực tế; không tính page table, trapframe hoặc trang kernel.
+Phần này chốt cách đếm trang user cho memory quota. Đơn vị quota là trang 4 KB. `max_pages == 0` nghĩa là không giới hạn. Chỉ tính trang vật lý user-space đã cấp phát thực tế; không tính page table, trapframe hoặc trang kernel. SCRUM-86 đã thêm helper và API cấu hình, nhưng chưa gắn helper vào đường cấp phát/giải phóng trong VM.
 
-Cấu hình quota dùng `cont_set_mem(id, max_pages)`, syscall 31; chỉ host được cấu hình container active khác 0, giá trị âm bị từ chối và không cho hạ `max_pages` thấp hơn `pages_used`. Hai helper dự kiến là `container_reserve_pages(c, n)` và `container_release_pages(c, n)`: reserve kiểm tra giới hạn và tăng bộ đếm dưới `c->lock`; release giảm bộ đếm dưới lock và panic nếu bộ đếm âm.
+Cấu hình quota dùng `cont_set_mem(id, max_pages)`, syscall 31; chỉ host được cấu hình container active khác 0, giá trị âm bị từ chối và không cho hạ `max_pages` thấp hơn `pages_used`. Hai helper `container_reserve_pages(c, n)` và `container_release_pages(c, n)` được thêm trong SCRUM-86: reserve kiểm tra giới hạn và tăng bộ đếm dưới `c->lock`; release giảm bộ đếm dưới lock và panic nếu tham số/bộ đếm gây underflow.
 
 Không dùng `p->sz` làm số trang đã dùng. Trong `sys_sbrk()`, nhánh lazy chỉ tăng `p->sz`; trang vật lý được cấp khi `vmfault()` xử lý truy cập. `uvmunmap()` cũng bỏ qua PTE không tồn tại hoặc không valid, nên bộ đếm cần thay đổi theo leaf mapping thật sự được tạo/gỡ.
 
@@ -116,3 +116,9 @@ Mỗi trang mới phải reserve một page từ container sở hữu trước k
 Với `uvmcopy()` lỗi, child container là owner của các trang copy một phần; với `kexec()` lỗi, container hiện tại vẫn là owner của image mới tạm thời và các trang ấy phải được rollback, trong khi image đang chạy không đổi. Khi `kexec()` thành công, quota phản ánh đồng thời hai image cho tới khi image cũ được giải phóng; do đó quota chặt có thể làm `exec` thất bại trong lúc image mới được dựng dù image mới có thể vừa quota sau khi image cũ bị bỏ. Việc thu hồi từ `freeproc()` luôn dùng container đã chụp từ process bị thu hồi, kể cả khi `kwait()` được gọi bởi process thuộc container khác.
 
 Các hook kể trên chỉ đếm user data pages. `freewalk()` vẫn giải phóng page-table pages, còn mappings của trampoline/trapframe được unmap với `do_free == 0`; chúng không làm thay đổi `pages_used`.
+
+### 7.3. Trạng thái groundwork trong SCRUM-86
+
+`container_reserve_pages(c, n)` từ chối container null, `n < 0`, container inactive hoặc trường hợp `max_pages > 0` và tổng trang vượt giới hạn; nếu hợp lệ, tăng `pages_used` dưới `c->lock`. `container_release_pages(c, n)` giảm bộ đếm dưới lock và panic nếu container/giá trị không hợp lệ hoặc số trang giải phóng lớn hơn `pages_used`. Đây là helper nền, hiện chưa được gọi từ `uvmalloc()`, `vmfault()`, `uvmcopy()` hay các đường free.
+
+`kcontainer_set_mem(id, max_pages)` yêu cầu caller thuộc host, `0 < id < NCONTAINER`, container active và `max_pages >= 0`; quota dương không được đặt thấp hơn `pages_used`. Khi hợp lệ, chỉ cập nhật `max_pages` dưới `c->lock`. `kcontainer_info()` đã đọc/trả `max_pages` và `pages_used` dưới cùng lock. Test cấu hình trong `ctest` xác nhận set/readback 64 trang, từ chối giá trị âm và từ chối lời gọi setter từ trong container. Vì VM hooks chưa được nối, test này không chứng minh giới hạn cấp phát trang đã enforce; `pages_used` vẫn là 0 trong hoạt động hiện tại.

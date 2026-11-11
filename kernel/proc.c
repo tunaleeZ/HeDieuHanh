@@ -67,6 +67,37 @@ container_release(struct container *c)
   release(&c->lock);
 }
 
+// Reserve user pages against a container's configured limit.
+int
+container_reserve_pages(struct container *c, int n)
+{
+  if (c == 0 || n < 0)
+    return -1;
+
+  acquire(&c->lock);
+  if (!c->active || (c->max_pages > 0 && c->pages_used + n > c->max_pages)) {
+    release(&c->lock);
+    return -1;
+  }
+  c->pages_used += n;
+  release(&c->lock);
+  return 0;
+}
+
+// Release previously reserved user pages; underflow indicates a kernel bug.
+void
+container_release_pages(struct container *c, int n)
+{
+  if (c == 0 || n < 0)
+    panic("container pages release argument");
+
+  acquire(&c->lock);
+  if (c->pages_used < n)
+    panic("container pages_used underflow");
+  c->pages_used -= n;
+  release(&c->lock);
+}
+
 // Allocate a page for each process's kernel stack.
 // Map it high in memory, followed by an invalid
 // guard page.
@@ -893,6 +924,26 @@ kcontainer_set_cpu(int id, int quota, int period)
   c->cpu_quota_ticks = quota;
   c->cpu_used_ticks = 0;
   c->cpu_period_start = now;
+  release(&c->lock);
+  return 0;
+}
+
+// Configure the user-page limit for an active non-host container.
+int
+kcontainer_set_mem(int id, int max_pages)
+{
+  struct container *c;
+
+  if (!container_is_host() || id <= 0 || id >= NCONTAINER || max_pages < 0)
+    return -1;
+
+  c = &containers[id];
+  acquire(&c->lock);
+  if (!c->active || (max_pages > 0 && max_pages < c->pages_used)) {
+    release(&c->lock);
+    return -1;
+  }
+  c->max_pages = max_pages;
   release(&c->lock);
   return 0;
 }

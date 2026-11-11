@@ -13,8 +13,9 @@ print_info(int id)
     return;
   }
 
-  printf("Container %d: count=%d, max=%d, active=%d\n", info.id,
-         info.proc_count, info.max_proc, info.active);
+  printf("Container %d: count=%d, max=%d, active=%d, max_pages=%d, pages_used=%d\n",
+         info.id, info.proc_count, info.max_proc, info.active,
+         info.max_pages, info.pages_used);
 }
 
 int
@@ -24,6 +25,7 @@ main(void)
   int pid;
   int status;
   int i;
+  int failures = 0;
 
   printf("\n=== Container Test ===\n");
 
@@ -43,6 +45,27 @@ main(void)
   printf("Created container ID: %d\n", id);
   print_info(id);
 
+  // Test memory quota configuration and cont_info readback from host.
+  printf("[Test 2b] Memory quota configuration\n");
+  if (cont_set_mem(id, 64) == 0) {
+    struct container_info info;
+    if (cont_info(id, &info) == 0 && info.max_pages == 64 && info.pages_used == 0)
+      printf("PASS: max_pages read back through cont_info\n");
+    else {
+      printf("FAIL: memory quota readback mismatch\n");
+      failures++;
+    }
+  } else {
+    printf("FAIL: set memory quota\n");
+    failures++;
+  }
+  if (cont_set_mem(id, -1) < 0)
+    printf("PASS: negative memory quota rejected\n");
+  else {
+    printf("FAIL: negative memory quota accepted\n");
+    failures++;
+  }
+
   // Test 3: Reject invalid maximum process count.
   printf("\n[Test 3] Invalid container limit\n");
   if (cont_create(-1) < 0)
@@ -58,6 +81,13 @@ main(void)
   }
 
   print_info(id);
+
+  if (cont_set_mem(id, 32) < 0)
+    printf("PASS: container cannot configure memory quota\n");
+  else {
+    printf("FAIL: container configured memory quota\n");
+    failures++;
+  }
 
   // Test 5: Fork until the container quota is reached.
   // The current process occupies 1 slot.
@@ -106,6 +136,6 @@ main(void)
 
   print_info(id);
 
-  printf("\n=== Container Test Finished ===\n");
-  exit(0);
+  printf("\n=== Container Test Finished: %d failures ===\n", failures);
+  exit(failures);
 }

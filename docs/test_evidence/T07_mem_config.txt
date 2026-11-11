@@ -1,0 +1,36 @@
+SCRUM-86 / 5.2 — Memory quota configuration groundwork
+QEMU: qemu-system-riscv64 10.2.1, virt, 128M, -smp 3
+Build: `make` PASS; `make fs.img` PASS (existing RWX LOAD segment warning).
+Command: `ctest`
+
+=== Container Test ===
+[Test 1] Host container
+Container 0: count=3, max=0, active=1, max_pages=0, pages_used=0
+[Test 2] Create container
+Created container ID: 1
+Container 1: count=0, max=3, active=1, max_pages=0, pages_used=0
+[Test 2b] Memory quota configuration
+PASS: max_pages read back through cont_info
+PASS: negative memory quota rejected
+[Test 3] Invalid container limit
+PASS: negative limit rejected
+[Test 4] Enter container
+Container 1: count=1, max=3, active=1, max_pages=64, pages_used=0
+PASS: container cannot configure memory quota
+[Test 5] Process quota
+Created child PID 4
+Created child PID 5
+fork returned -1 at attempt 3
+Container 1: count=3, max=3, active=1, max_pages=64, pages_used=0
+[Test 6] Reap children
+Child reaped
+Child reaped
+Container 1: count=1, max=3, active=1, max_pages=64, pages_used=0
+[Test 7] Fork after quota release
+PASS: fork succeeded after quota release
+Container 1: count=1, max=3, active=1, max_pages=64, pages_used=0
+=== Container Test Finished: 0 failures ===
+
+The test proves API configuration/readback and host-only checks. It does not
+prove enforcement during allocation: this task deliberately has not connected
+the page helpers to VM allocation/free hooks, so pages_used remains zero.

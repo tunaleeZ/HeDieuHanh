@@ -178,9 +178,11 @@ sys_cont_set_cpu(void)
 uint64
 sys_cont_set_mem(void)
 {
-  if (!container_is_host())
-    return -1;
-  return -1;
+  int id, max_pages;
+
+  argint(0, &id);
+  argint(1, &max_pages);
+  return kcontainer_set_mem(id, max_pages);
 }
 
 uint64
