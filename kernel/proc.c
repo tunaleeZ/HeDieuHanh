@@ -859,6 +859,8 @@ kcontainer_enter(int id)
   struct proc *p;
   struct container *old;
   struct container *new;
+  struct inode *root;
+  struct inode *oldroot, *oldcwd;
 
   if (id < 0 || id >= NCONTAINER)
     return -1;
@@ -884,6 +886,25 @@ kcontainer_enter(int id)
 
   // Release quota in the old container.
   container_release(old);
+
+  // A container root is immutable after it is set. Snapshot it under the
+  // container lock, then acquire the process reference outside that lock.
+  acquire(&new->lock);
+  root = new->root;
+  release(&new->lock);
+
+  if (root != 0) {
+    root = idup(root);
+    oldroot = p->root;
+    oldcwd = p->cwd;
+    p->root = root;
+    p->cwd = idup(root);
+
+    begin_op();
+    iput(oldcwd);
+    iput(oldroot);
+    end_op();
+  }
 
   return 0;
 }
