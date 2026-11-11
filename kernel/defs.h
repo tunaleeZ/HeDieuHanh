@@ -80,6 +80,7 @@ void            panic(char*) __attribute__((noreturn));
 void            printkinit(void);
 
 // proc.c
+struct container;
 int             cpuid(void);
 void            kexit(int);
 int             kfork(void);
@@ -112,6 +113,7 @@ int             kcontainer_enter(int);
 int             kcontainer_info(int, struct container_info *);
 int             kcontainer_setroot(int, struct inode *);
 int             kcontainer_set_cpu(int, int, int);
+void            container_charge_tick(struct container *);
 
 // swtch.S
 void            swtch(struct context*, struct context*);

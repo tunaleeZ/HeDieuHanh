@@ -890,6 +890,17 @@ kcontainer_set_cpu(int id, int quota, int period)
   return 0;
 }
 
+// Charge one approximate CPU tick to the process's container.
+void
+container_charge_tick(struct container *c)
+{
+  if (c == 0)
+    return;
+  acquire(&c->lock);
+  c->cpu_used_ticks++;
+  release(&c->lock);
+}
+
 // Move the current process into another container.
 // Return 0 on success, -1 on failure.
 int
