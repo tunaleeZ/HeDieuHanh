@@ -901,6 +901,34 @@ container_charge_tick(struct container *c)
   release(&c->lock);
 }
 
+// Decide whether a container may run in the current soft-quota period.
+int
+container_cpu_allowed(struct container *c)
+{
+  uint64 now, elapsed, periods;
+  int allowed;
+
+  if (c == 0 || c->id == 0)
+    return 1;
+
+  // ticks is sampled without tickslock; this is approximate by design.
+  now = ticks;
+  acquire(&c->lock);
+  if (c->cpu_quota_ticks == 0) {
+    allowed = 1;
+  } else {
+    if (c->cpu_period_ticks > 0 && now - c->cpu_period_start >= c->cpu_period_ticks) {
+      elapsed = now - c->cpu_period_start;
+      periods = elapsed / c->cpu_period_ticks;
+      c->cpu_period_start += periods * c->cpu_period_ticks;
+      c->cpu_used_ticks = 0;
+    }
+    allowed = c->cpu_used_ticks < c->cpu_quota_ticks;
+  }
+  release(&c->lock);
+  return allowed;
+}
+
 // Move the current process into another container.
 // Return 0 on success, -1 on failure.
 int
