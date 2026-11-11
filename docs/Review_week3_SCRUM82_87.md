@@ -140,33 +140,35 @@ Không có `cont_destroy`, nên root reference không được `iput`. Handoff S
 
 ## 6. Build và tự chạy test
 
-Cả 20 commit đều qua `make kernel/kernel` và `make fs.img`. Baseline `b48ec18` và HEAD có cùng hai linker warning:
+Cả 20 commit được checkout riêng trong worktree tạm; tại mỗi commit chạy `make clean`, `make kernel/kernel`, `make fs.img`. Tất cả đều thành công. Baseline `b48ec18` và HEAD có cùng hai linker warning:
 
 - `kernel/kernel has a LOAD segment with RWX permissions`
 - `user/_forktest has a LOAD segment with RWX permissions`
 
-QEMU HEAD: `virt`, 128 MiB, 3 hart.
+Build HEAD sạch bằng `make clean && make && make fs.img` cũng thành công. QEMU test chạy từ shell xv6 sau boot: `qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic` với virtio disk `fs.img` theo cấu hình Makefile. Cột Scrum/sub-task dưới đây ghi task implementation được kiểm tra; “Regression” nghĩa là kiểm thử tương thích, không phải sub-task đã tạo chương trình test đó.
 
-| Test/lệnh | Kết quả |
-|---|---|
-| `ptest_neg` | PASS, 0 failures |
-| `ctest` | PASS, 0 failures |
-| `setupc1` | PASS lần đầu trên filesystem mới |
-| `roottest` | PASS, 0 failures |
-| `chroottest /c1` | In `chroot succeeded`, `chdir to new root succeeded` |
-| `cputest` ×2 | PASS; zero windows = 0 |
-| `test_sysinfo` | PASS |
-| `bench_cpu` | 643390 iterations/100 ticks trong lượt review |
-| `bench_mem` | 131072 bytes cấp/thu hồi |
-| `bench_proc` | 100/100 fork, slots 3 trước/sau |
-| `forktest` | `fork test OK` |
-| `usertests -q` | `ALL TESTS PASSED` |
+| Lệnh test trong xv6 / build host | Chức năng được kiểm tra | Scrum / sub-task liên quan | Kết quả thực tế |
+|---|---|---|---|
+| Mỗi commit: `make clean`; `make kernel/kernel`; `make fs.img` | Build kernel và filesystem tại đúng commit | Tất cả 20 commit SCRUM-82–87; khung nền SCRUM-89/8.2 | Cả 20 commit thành công; chỉ có hai linker warning nêu trên, giống baseline. |
+| HEAD: `make clean && make && make fs.img` | Build sạch trước khi chạy QEMU | Regression HEAD cho SCRUM-82–87 | Thành công; warning giống baseline. |
+| `ptest_neg` | Host-only admin calls bị từ chối trong container; `cont_info` vẫn công khai; kiểm tra một chiều | SCRUM-84/3.1–3.3 (đặc biệt test 3.3) | PASS, 0 failures. Test vào container chưa đặt root nhưng không thử mở đường dẫn host. |
+| `ctest` | Process limit, giải phóng slot, `cont_set_mem` đặt/đọc `max_pages`, từ chối giá trị âm và setter trong container | SCRUM-84/3.3; SCRUM-86/5.2 | PASS, 0 failures. Không trực tiếp gọi helper page reserve/release. |
+| `setupc1` | Tạo `/c1`, file trong root, file ngoài root và executable fixture | SCRUM-83/2.4 | PASS lần đầu trên filesystem mới. Không idempotent nếu chạy lại trên cùng filesystem. |
+| `roottest` | `chroot`, absolute/relative path, `..`, FD mở trước chroot, fork/exec, link/unlink và `cont_enter` với root đã đặt | SCRUM-83/2.3–2.4 | PASS, 0 failures. Không test `cont_enter` trước khi đặt container root. |
+| `chroottest /c1` | Chroot và đổi cwd tới root mới | Regression chroot cho SCRUM-83; test chương trình có từ trước | In `chroot succeeded`, `chdir to new root succeeded`; shell nhận lại prompt. |
+| `cputest` ×2 | Quota 5/20, host progress, worker progress theo cửa sổ, đọc CPU fields qua `cont_info` | SCRUM-85/4.5; SCRUM-87/6.1 | Cả hai PASS, `zero_windows=0`. Lượt 1: A 276195000/B 1199097000 iterations; lượt 2: A 273484000/B 1203708000. |
+| `test_sysinfo` | Syscall sysinfo legacy: free memory và process slots | Regression syscall 28; có trong kiểm tra nền SCRUM-89/8.2, ngoài SCRUM-82–87 | PASS. |
+| `bench_cpu` | CPU benchmark 100 ticks | SCRUM-87/6.2 | 643390 iterations/100 ticks trong lượt review. |
+| `bench_mem` | Cấp/thu hồi 32 trang và so sánh free memory | SCRUM-87/6.2 | 131072 bytes cấp phát và thu hồi. |
+| `bench_proc` | 100 fork/wait, process slots và free memory trước/sau | SCRUM-87/6.2 | 100/100 fork; slots 3 trước/sau; PASS. |
+| `forktest` | Regression fork/exit/wait sau scheduler và trap changes | SCRUM-85/4.2, 4.4; regression chung | `fork test OK`. |
+| `usertests -q` | Regression suite xv6, gồm process, filesystem, memory/lazy allocation và preemption | SCRUM-85/4.2, 4.4; regression chung | `ALL TESTS PASSED`. Log có các `usertrap(): unexpected scause` ở ca truy cập địa chỉ không hợp lệ; suite tiếp tục và kết thúc PASS. |
 
 Benchmark raw logs `benchmark_run_1..5.txt` tự tính lại: CPU `[618954, 617294, 598448, 585704, 589970]`, mean **602074**, population SD **13742.01**. Process elapsed ticks `[0,0,2,1,0]`, mean **0.6**, population SD **0.8**.
 
 `docs/test_evidence/scrum65_qemu.log` chỉ có root/chroot tests, không có benchmark. Các root tests tương ứng đều qua ở HEAD.
 
-[CHƯA CHẠY] Stress inode > `NINODE`, lặp quota/process count và kill process đang throttle; các thử nghiệm này cần bạn duyệt trước. Cũng chưa tái hiện runtime root-unset leak hoặc race H5.
+[CHƯA CHẠY] Stress inode > `NINODE`, lặp quota/process count và kill process đang throttle; các thử nghiệm này cần bạn duyệt trước. Cũng chưa tái hiện runtime root-unset leak hoặc race H5. Chưa chạy riêng từng test trong một boot riêng; bảng trên ghi chuỗi lệnh chạy trên cùng một boot QEMU sạch.
 
 ## 7. Hành động ưu tiên
 
