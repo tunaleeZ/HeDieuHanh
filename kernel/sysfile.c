@@ -503,6 +503,42 @@ sys_chroot(void)
 }
 
 uint64
+sys_cont_setroot(void)
+{
+  int id;
+  char path[MAXPATH];
+  struct inode *ip;
+
+  argint(0, &id);
+  if (argstr(1, path, MAXPATH) < 0)
+    return -1;
+
+  begin_op();
+  if ((ip = namei(path)) == 0) {
+    end_op();
+    return -1;
+  }
+
+  ilock(ip);
+  if (ip->type != T_DIR) {
+    iunlockput(ip);
+    end_op();
+    return -1;
+  }
+  iunlock(ip);
+
+  if (kcontainer_setroot(id, ip) < 0) {
+    iput(ip);
+    end_op();
+    return -1;
+  }
+
+  // The container now owns the reference returned by namei().
+  end_op();
+  return 0;
+}
+
+uint64
 sys_exec(void)
 {
   char path[MAXPATH], *argv[MAXARG];

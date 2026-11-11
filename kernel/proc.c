@@ -888,6 +888,29 @@ kcontainer_enter(int id)
   return 0;
 }
 
+// Set a container root once. On success, ownership of root's inode
+// reference transfers to the container.
+int
+kcontainer_setroot(int id, struct inode *root)
+{
+  struct container *c;
+
+  if (id < 0 || id >= NCONTAINER || root == 0)
+    return -1;
+
+  c = &containers[id];
+  acquire(&c->lock);
+
+  if (!c->active || c->root != 0) {
+    release(&c->lock);
+    return -1;
+  }
+
+  c->root = root;
+  release(&c->lock);
+  return 0;
+}
+
 // Get information about a container.
 // Return 0 on success, -1 on failure.
 int

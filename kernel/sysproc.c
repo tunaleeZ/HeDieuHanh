@@ -165,12 +165,6 @@ sys_cont_info(void)
 }
 
 uint64
-sys_cont_setroot(void)
-{
-  return -1;
-}
-
-uint64
 sys_cont_set_cpu(void)
 {
   return -1;
