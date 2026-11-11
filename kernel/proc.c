@@ -558,6 +558,13 @@ scheduler(void)
     for (p = proc; p < &proc[NPROC]; p++) {
       acquire(&p->lock);
       if (p->state == RUNNABLE) {
+        // Keep throttled processes runnable; a later timer tick will let
+        // container_cpu_allowed() reset their period. Lock order is
+        // p->lock -> container->lock, and the helper releases it here.
+        if (p->container != 0 && !container_cpu_allowed(p->container)) {
+          release(&p->lock);
+          continue;
+        }
         // Switch to chosen process.  It is the process's job
         // to release its lock and then reacquire it
         // before jumping back to us.

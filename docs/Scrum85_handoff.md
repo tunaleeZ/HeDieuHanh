@@ -9,8 +9,9 @@ Triển khai CPU quota soft theo `docs/cpu_quota_design.md`: cấu hình quota, 
 | --- | --- | --- | --- |
 | 4.1 Initialize CPU fields and implement cont_set_cpu syscall (30) | đã commit | 92ea44c | Fields khởi tạo; setter host-only active non-host, kiểm quota/period |
 | 4.2 Charge CPU ticks on timer interrupt | đã commit | 8458cf3 | Mỗi timer interrupt của process cộng một CPU tick dưới container lock |
-| 4.3 Implement period reset helper | đã commit | sắp ghi | Quota 0/host luôn allowed; elapsed periods reset budget |
-| 4.4 Skip throttled processes in scheduler | chưa làm | — | |
+| 4.2 Charge CPU ticks on timer interrupt | đã commit | 8458cf3 | Mỗi timer interrupt của process cộng một CPU tick dưới container lock |
+| 4.3 Implement period reset helper | đã commit | 741a259 | Quota 0/host luôn allowed; elapsed periods reset budget |
+| 4.4 Skip throttled processes in scheduler | đã commit | sắp ghi | Runnable bị throttle được skip; giữ nguyên wfi khi không process nào chạy được |
 | 4.5 Write cputest, run and save evidence | chưa làm | — | |
 
 ## 3. Quy ước và giả định
@@ -20,7 +21,7 @@ Triển khai CPU quota soft theo `docs/cpu_quota_design.md`: cấu hình quota, 
 - Cần ghi nhận độ phân giải timer, timer drift và rủi ro tiến trình bị throttle khi đang giữ sleeplock.
 
 ## 4. Bằng chứng kiểm thử
-4.1–4.3: `make` PASS (linker cảnh báo RWX LOAD segment như trước). Các ca runtime sẽ chạy ở 4.5.
+4.1–4.4: `make` PASS (linker cảnh báo RWX LOAD segment như trước). Scheduler giữ nguyên idle `wfi`; các ca runtime sẽ chạy ở 4.5.
 
 ## 5. Bước tiếp theo
 Hoàn tất 4.1 rồi lần lượt 4.2–4.5; mỗi sub-task có một commit riêng. Không push.
