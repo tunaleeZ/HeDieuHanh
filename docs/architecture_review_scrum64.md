@@ -169,3 +169,73 @@ container-run can duoc tiep tuc trien khai, review va test.
 
 Tai lieu nay khong khang dinh cac tinh nang chua co
 bang chung da hoan thanh.
+
+## 9. Week 3 Architecture Status Update (2026-11-11)
+
+This section supersedes outdated implementation-status
+statements in sections 2-8, while preserving the original review.
+
+### 9.1 Implemented components
+
+- Container process membership and process quota.
+- Container root stored in struct container.
+- cont_setroot syscall (29).
+- Host-only administration permissions.
+- cont_set_cpu syscall (30).
+- Timer-based CPU accounting and scheduler throttling.
+- CPU quota period reset.
+- cont_set_mem syscall (31).
+- Memory quota configuration and reserve/release helpers.
+- Extended container_info fields.
+
+### 9.2 Verified tests
+
+- Clean build and xv6 boot: PASS.
+- forktest: PASS.
+- ctest: PASS.
+- ptest_neg: PASS.
+- roottest with configured root: PASS.
+- chroottest: PASS.
+- cputest: PASS in documented runs.
+- usertests -q: ALL TESTS PASSED.
+- Resource benchmarks: results recorded.
+
+### 9.3 Critical open issues
+
+F1 - BLOCKER:
+Entering a container without a configured root can
+retain the previous host root/cwd.
+Configured-root tests do not cover this case.
+
+F2 - MAJOR:
+Timer-only CPU charging misses execution that ends
+before the next timer interrupt.
+
+F3 - MAJOR:
+Throttling while holding a sleeplock may delay
+other processes. Dedicated test not yet completed.
+
+F4 - MINOR:
+Memory reserve integer addition may overflow.
+
+### 9.4 Pending features
+
+- PID namespace: design only (SCRUM-90).
+- Container run tool: not verified/implemented.
+- Memory quota VM hooks: not connected.
+- Container destroy/reuse lifecycle: not implemented.
+- Full concurrent-container isolation tests: pending.
+
+### 9.5 Integration result
+
+SCRUM-88 documents test cases T01-T16 with evidence.
+Some cases PASS, others remain BLOCKED or NOT RUN.
+
+See:
+- docs/Review_week3_SCRUM82_87.md
+- docs/integration_test_matrix.md
+- docs/regression_defects.md
+- docs/pid_namespace_design.md
+
+The system is not yet considered fully isolated because
+the root-unset entry case remains open.
