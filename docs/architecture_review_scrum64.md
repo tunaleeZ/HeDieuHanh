@@ -88,15 +88,76 @@ docs/cpu_quota_design.md
 | Container run tool | Not verified |
 | Isolation stress tests | Not completed |
 
-## 7. Cac van de can nhom quyet dinh
+## 7. Cac van de da duoc nhom quyet dinh
 
-1. CPU quota la soft quota hay strict quota?
-2. CPU usage tinh theo interrupt hay thoi gian chay thuc?
-3. Lock ordering giua process va container?
-4. CPU quota co ap dung cho host container khong?
-5. Container root la per-process hay per-container?
-6. Pham vi memory quota: user pages hay ca kernel pages?
-7. Khi nao trien khai PID namespace va container-run?
+### 7.1. CPU quota la soft quota hay strict quota?
+
+**Quyet dinh:** CPU quota la soft quota.
+
+**Ly do:** Accounting dua tren timer interrupt co do phan giai huu han. Tren nhieu hart, process co the tiep tuc chay trong khoang giua luc cham quota va lan scheduler kiem tra tiep theo.
+
+**He qua:** Container co the vuot quota xap xi toi da mot CPU-tick tren moi hart dang chay; quota khong phai gioi han thoi gian tuyet doi.
+
+### 7.2. CPU usage tinh theo interrupt hay thoi gian chay thuc?
+
+**Quyet dinh:** Moi timer interrupt den khi process dang chay duoc tinh la mot CPU-tick xap xi. Accounting thuc hien trong usertrap() va kerneltrap() tai nhanh which_dev == 2, truoc yield().
+
+**Ly do:** xv6 da preempt process tai nhanh timer interrupt nay; cach dem co the gan voi ca thoi gian chay user va kernel ma khong can them dong ho moi.
+
+**He qua:** So lieu la xap xi, phu thuoc do phan giai va drift cua timer. CPU-tick tren cac hart duoc cong don theo container.
+
+### 7.3. Lock ordering giua process va container?
+
+**Quyet dinh:** Thu tu lock tong the la wait_lock -> p->lock -> container->lock.
+
+**Ly do:** wait_lock da duoc quy uoc nam truoc p->lock trong quan ly parent/process; scheduler can doc container khi dang giu p->lock, nen container->lock phai dung sau p->lock neu hai lock cung duoc giu.
+
+**He qua:** Chi giu p->lock quanh phep gan p->container. Khong giu container->lock khi goi swtch(), yield(), begin_op(), iput() hoac kalloc(). Cac thao tac reserve/release quota khong duoc tao thu tu long nhau nguoc voi quy uoc tren.
+
+### 7.4. CPU quota co ap dung cho host container khong?
+
+**Quyet dinh:** Host container (id 0) duoc mien CPU quota.
+
+**Ly do:** Host chua cac tien trinh quan tri va shell can tiep tuc phan hoi khi container khac bi throttle.
+
+**He qua:** Scheduler khong throttle tien trinh thuoc host theo CPU quota; quota chi ap dung cho container khong phai host.
+
+### 7.5. Container root la per-process hay per-container?
+
+**Quyet dinh:** Root filesystem la thuoc tinh cua container, duoc luu tren struct container va chi duoc dat mot lan bang cont_setroot(id, path), syscall 29. Khi cont_enter thanh cong, tien trinh nhan root va cwd tu root cua container neu root da duoc dat.
+
+**Ly do:** Cac tien trinh cung container can chia se cung mot bien gioi filesystem.
+
+**He qua:** p->root van duoc giu de namex() su dung theo process, nhung gia tri cua no theo root container khi vao container. chroot() duoc giu lai va chi danh cho host theo quyet dinh quyen.
+
+### 7.6. Pham vi memory quota: user pages hay ca kernel pages?
+
+**Quyet dinh:** Chi dem cac trang vat ly user-space da duoc cap phat thuc su; khong dem page table, trapframe hay kernel pages.
+
+**Ly do:** sbrk mac dinh lazy, nen p->sz co the tang ma chua cap phat trang vat ly.
+
+**He qua:** Tang/giam quota theo cac hook cap phat va thu hoi trang user thuc te; khong suy ra memory usage tu p->sz.
+
+### 7.7. Khi nao trien khai PID namespace va container-run?
+
+**Quyet dinh:** Tuan 3 chi khao sat va thiet ke PID namespace. Trien khai PID namespace va container-run tool de sang tuan sau.
+
+**Ly do:** Can tach rieng phan thiet ke va phan hien thuc de danh gia anh huong den quan ly PID, wait/kill va cong cu chay container.
+
+**He qua:** Tuan 3 khong dua PID namespace vao acceptance criteria cua kernel; container-run tool cung nam ngoai pham vi tuan 3.
+
+### 7.8. So syscall lien quan
+
+| So | Syscall | Trang thai |
+|---:|---|---|
+| 28 | sysinfo | Da su dung |
+| 29 | cont_setroot | Da chot so |
+| 30 | cont_set_cpu | Da chot so |
+| 31 | cont_set_mem | Da chot so |
+
+### 7.9. Quy uoc lock
+
+Khi can giu dong thoi nhieu lock, thu tu la wait_lock -> p->lock -> container->lock. Khong giu container->lock qua swtch(), yield(), begin_op(), iput() hoac kalloc(). Phep gan p->container phai nam trong p->lock; reserve quota container dich thuc hien truoc khi lay p->lock va release quota container cu sau khi nha p->lock.
 
 ## 8. Ket luan
 
