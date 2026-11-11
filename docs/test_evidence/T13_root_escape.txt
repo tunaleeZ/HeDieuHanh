@@ -1,0 +1,62 @@
+SCRUM-83 Sub-task 2.4: Script the /c1 fixture and save evidence
+Date: 2026-11-11
+Source: commit 5cdf580 plus Sub-task 2.4 working changes
+QEMU: 10.2.1 (Debian 1:10.2.1+ds-1ubuntu3.2), 3 harts, 128M
+Build: make clean PASS; make PASS (linker reports existing RWX LOAD segment warning); make fs.img PASS
+
+Run: fresh fs.img, then execute `setupc1` followed by `roottest` in xv6 shell.
+QEMU was run under `timeout 24s`; Ctrl-A x was sent after the tests returned to the shell prompt.
+
+Observed serial output:
+
+xv6 kernel is booting
+
+hart 2 starting
+hart 1 starting
+init: starting sh
+$ setupc1
+roottest
+PASS: /c1 root fixture ready
+$ === ROOT DIRECTORY TEST ===
+PASS: open outside file before chroot
+PASS: set container root
+PASS: container root can only be set once
+PASS: chroot /c1
+PASS: chdir /
+PASS: pre-opened fd remains usable after chroot
+PASS: open /test.txt
+PASS: open test.txt
+PASS: open /../test.txt
+PASS: open /../../test.txt
+PASS: blocked /outside.txt
+PASS: blocked /../outside.txt
+PASS: blocked /../../outside.txt
+PASS: create file inside root
+PASS: unlink file inside root
+PASS: link file inside root
+PASS: open /linked.txt
+PASS: unlink linked file inside root
+PASS: link with parent traversal stays in root
+PASS: open /bounded_link.txt
+PASS: unlink bounded link
+PASS: unlink outside file remains blocked
+PASS: mkdir final dotdot rejected
+PASS: create directory for final dotdot test
+PASS: unlink final dotdot rejected
+PASS: remove test directory
+PASS: forked child retains root boundary
+PASS: chdir .. at root
+PASS: open test.txt
+INSIDE_EXEC_OK
+PASS: exec inside root
+PASS: blocked exec outside root
+PASS: exec outside root blocked
+PASS: open /test.txt
+PASS: blocked /outside.txt
+PASS: cont_enter applies container root
+=== ROOT TEST FINISHED: 0 failures ===
+$ QEMU: Terminated
+
+Result: PASS. No test case reported FAIL; roottest exited with zero failures.
+
+Inode reference code review: the container keeps the inode reference returned by `namei`; `cont_enter` obtains one reference for process root and one for cwd, then drops the previous process references inside a filesystem transaction. Existing `kfork` duplicates root/cwd and `kexit` drops both. The container-held reference is intentional because containers have no destroy path.
