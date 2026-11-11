@@ -167,9 +167,12 @@ sys_cont_info(void)
 uint64
 sys_cont_set_cpu(void)
 {
-  if (!container_is_host())
-    return -1;
-  return -1;
+  int id, quota, period;
+
+  argint(0, &id);
+  argint(1, &quota);
+  argint(2, &period);
+  return kcontainer_set_cpu(id, quota, period);
 }
 
 uint64

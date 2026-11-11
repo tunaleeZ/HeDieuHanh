@@ -106,7 +106,7 @@ procinit(void)
     containers[i].cpu_period_ticks = CPU_DEFAULT_PERIOD;
     containers[i].cpu_quota_ticks = 0;
     containers[i].cpu_used_ticks = 0;
-    containers[i].cpu_period_start = 0;
+    containers[i].cpu_period_start = ticks;
     containers[i].max_pages = 0;
     containers[i].pages_used = 0;
   }
@@ -830,6 +830,7 @@ int
 kcontainer_create(int max_proc)
 {
   int i;
+  uint64 now = ticks;
 
   if (!container_is_host())
     return -1;
@@ -849,7 +850,7 @@ kcontainer_create(int max_proc)
       containers[i].cpu_period_ticks = CPU_DEFAULT_PERIOD;
       containers[i].cpu_quota_ticks = 0;
       containers[i].cpu_used_ticks = 0;
-      containers[i].cpu_period_start = 0;
+      containers[i].cpu_period_start = now;
       containers[i].max_pages = 0;
       containers[i].pages_used = 0;
 
@@ -861,6 +862,32 @@ kcontainer_create(int max_proc)
   }
 
   return -1;
+}
+
+// Configure the soft CPU quota for an active non-host container.
+int
+kcontainer_set_cpu(int id, int quota, int period)
+{
+  struct container *c;
+  uint64 now;
+
+  if (!container_is_host() || id <= 0 || id >= NCONTAINER ||
+      quota < 0 || period <= 0 || quota > period)
+    return -1;
+
+  now = ticks; // Approximate sample; do not nest tickslock with container->lock.
+  c = &containers[id];
+  acquire(&c->lock);
+  if (!c->active) {
+    release(&c->lock);
+    return -1;
+  }
+  c->cpu_period_ticks = period;
+  c->cpu_quota_ticks = quota;
+  c->cpu_used_ticks = 0;
+  c->cpu_period_start = now;
+  release(&c->lock);
+  return 0;
 }
 
 // Move the current process into another container.

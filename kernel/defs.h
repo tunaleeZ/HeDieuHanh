@@ -111,6 +111,7 @@ int             kcontainer_create(int);
 int             kcontainer_enter(int);
 int             kcontainer_info(int, struct container_info *);
 int             kcontainer_setroot(int, struct inode *);
+int             kcontainer_set_cpu(int, int, int);
 
 // swtch.S
 void            swtch(struct context*, struct context*);
