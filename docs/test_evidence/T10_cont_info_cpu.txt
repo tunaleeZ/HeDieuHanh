@@ -1,0 +1,22 @@
+SCRUM-87 / 6.1 — Per-container CPU fields through cont_info
+Kernel and user `struct container_info` both declare, in order:
+int id, proc_count, max_proc, active; uint64 cpu_period_ticks,
+cpu_quota_ticks, cpu_used_ticks; int max_pages, pages_used. The user copy is
+in user/user.h and matches the kernel ABI field order/types/alignment.
+
+Build: `make fs.img` PASS. QEMU: 10.2.1, virt, 128M, -smp 3.
+Command: `cputest`; container id=1 configured quota=5, period=20; workload 200 ticks.
+
+cont_info before workload: id=1 period=20 quota=5 used=0
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: ticks 54, 74, 94, 114, 134, 154, 174, 194, 214, 234
+cont_info during workload: used=5 at ticks 54 through 214; used=0 at tick 234
+A window iterations: 22602000, 24743000, 26349000, 23881000, 25872000,
+  25953000, 26375000, 25355000, 25166000, 25886000
+RESULT: container A iterations=252182000 zero_windows=0
+RESULT: host B iterations=1154868000
+cont_info after workload: id=1 period=20 quota=5 used=0
+=== CPU QUOTA TEST PASS ===
+
+The final used=0 is expected here: the period reset helper had advanced the
+container to a fresh period by the time the host sampled after worker exit.

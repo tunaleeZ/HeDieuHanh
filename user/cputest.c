@@ -15,6 +15,21 @@ struct cpu_result {
 
 static int target_container_id;
 
+static int
+print_cpu_info(const char *label)
+{
+  struct container_info info;
+
+  if (cont_info(target_container_id, &info) < 0) {
+    printf("FAIL: cont_info %s\n", label);
+    return -1;
+  }
+  printf("cont_info %s: id=%d period=%ld quota=%ld used=%ld\n", label,
+         info.id, (long)info.cpu_period_ticks, (long)info.cpu_quota_ticks,
+         (long)info.cpu_used_ticks);
+  return 0;
+}
+
 static void
 run_load(int id, int result_fd)
 {
@@ -64,7 +79,7 @@ main(void)
 {
   int pipefd[2];
   int pid_a, pid_b;
-  int monitor_start, monitor_end, last_progress;
+  int monitor_start, monitor_end, last_progress, last_info;
   struct cpu_result result;
   int received = 0, bad = 0;
   uint64 a_iterations = 0, b_iterations = 0;
@@ -78,6 +93,8 @@ main(void)
     printf("FAIL: create/configure CPU quota\n");
     exit(1);
   }
+  if (print_cpu_info("before workload") < 0)
+    bad = 1;
   if (pipe(pipefd) < 0) {
     printf("FAIL: create result pipe\n");
     exit(1);
@@ -107,11 +124,17 @@ main(void)
   monitor_start = uptime();
   monitor_end = monitor_start + TEST_TICKS + WINDOW_TICKS;
   last_progress = monitor_start;
+  last_info = monitor_start + WINDOW_TICKS / 2;
   while (uptime() < monitor_end) {
     int now = uptime();
     if (now - last_progress >= WINDOW_TICKS) {
       printf("HOST_PROGRESS: tick %d\n", now);
       last_progress = now;
+    }
+    if (now >= last_info) {
+      if (print_cpu_info("during workload") < 0)
+        bad = 1;
+      last_info += WINDOW_TICKS;
     }
     pause(1);
   }
@@ -141,6 +164,8 @@ main(void)
   printf("RESULT: container A iterations=%ld zero_windows=%d\n",
          (long)a_iterations, a_zero_windows);
   printf("RESULT: host B iterations=%ld\n", (long)b_iterations);
+  if (print_cpu_info("after workload") < 0)
+    bad = 1;
   if (a_iterations == 0 || b_iterations == 0 || a_iterations >= b_iterations) {
     printf("FAIL: quota worker was not measurably limited\n");
     bad = 1;
