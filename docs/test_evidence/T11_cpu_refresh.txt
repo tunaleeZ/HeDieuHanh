@@ -1,0 +1,45 @@
+SCRUM-85 / 4.5 — T11 quota refresh windows
+QEMU: qemu-system-riscv64 10.2.1, virt, 128M, -smp 3.
+Three `cputest` invocations, each TEST_TICKS=200, quota=5, period=20.
+All 30 reported 20-tick windows had nonzero iteration counts.
+
+Run 1 (total A=258240000, host B=1172504000):
+1 22442000
+2 26403000
+3 26976000
+4 25596000
+5 26756000
+6 26020000
+7 26107000
+8 25081000
+9 26662000
+10 26197000
+
+Run 2 (total A=251544000, host B=1167253000):
+1 21301000
+2 26109000
+3 26121000
+4 20598000
+5 26608000
+6 26448000
+7 26733000
+8 25607000
+9 26108000
+10 25911000
+
+Run 3 (total A=261166000, host B=1166088000):
+1 25314000
+2 26206000
+3 26252000
+4 25598000
+5 26423000
+6 26169000
+7 26595000
+8 26130000
+9 25779000
+10 26700000
+
+Result: all three runs PASS; `zero_windows=0` each time. Runs were made
+sequentially without rebooting QEMU; each test created a new container with
+fresh quota state. Counts are loop iterations and demonstrate progress per
+window, not a precise CPU-cycle measurement.

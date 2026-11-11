@@ -162,6 +162,7 @@ UPROGS=\
 	$U/_outsideexec\
 	$U/_setupc1\
 	$U/_ptest_neg\
+	$U/_cputest\
 	$U/_test_sysinfo
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

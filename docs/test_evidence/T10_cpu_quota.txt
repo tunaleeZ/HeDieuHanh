@@ -1,0 +1,36 @@
+SCRUM-85 / 4.5 — T10 CPU quota and T12 host progress
+QEMU: qemu-system-riscv64 10.2.1 (Debian 1:10.2.1+ds-1ubuntu3.2)
+Configuration: virt, 128M, -smp 3, fresh fs.img; three `cputest` invocations
+were run sequentially in the same QEMU boot. Each invocation created a new
+container and set quota=5, period=20. TEST_TICKS=200.
+Build before boot: `make fs.img` PASS.
+
+Run 1 output:
+HOST_PROGRESS: ticks 45, 65, 85, 105, 125, 145, 165, 185, 205, 225
+RESULT: container A iterations=258240000 zero_windows=0
+RESULT: host B iterations=1172504000
+=== CPU QUOTA TEST PASS ===
+
+Run 2 output:
+HOST_PROGRESS: ticks 295, 315, 335, 355, 375, 395, 415, 435, 455, 475
+RESULT: container A iterations=251544000 zero_windows=0
+RESULT: host B iterations=1167253000
+=== CPU QUOTA TEST PASS ===
+
+Run 3 output:
+HOST_PROGRESS: ticks 542, 562, 582, 602, 622, 642, 662, 682, 702, 722
+RESULT: container A iterations=261166000 zero_windows=0
+RESULT: host B iterations=1166088000
+=== CPU QUOTA TEST PASS ===
+
+Observed A/B iteration ratios: 22.03%, 21.55%, 22.39%. The quota-bound
+container received materially less CPU work each time, and host progress
+continued throughout the 200-tick workers' run. These are loop iterations,
+not calibrated CPU cycles; the expected ratio is approximate.
+
+No deadlock or busy-loop was observed in these runs. Timer-interrupt charging
+is a soft approximation: an interrupt counts as one CPU tick; multi-hart
+simultaneous scheduling and timer resolution can overshoot quota. The test
+does not specifically exercise throttling while a process holds an inode
+sleeplock; that wait-risk remains unverified. `ticks` sampling is unlocked,
+and timer drift is not quantified here.
