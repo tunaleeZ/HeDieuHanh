@@ -1,0 +1,102 @@
+SCRUM-84 Sub-task 3.3: Write negative test and rerun ctest
+Date: 2026-11-11
+Source: Sub-task 3.3 working tree after commits 884655c and 4960a35
+QEMU: 10.2.1 (Debian 1:10.2.1+ds-1ubuntu3.2), 3 harts, 128M
+Build: make clean PASS; make PASS (linker reports existing RWX LOAD segment warning); make fs.img PASS
+
+Each QEMU run used `timeout`; the emulator was closed with Ctrl-A x after test completion.
+
+ptest_neg (timeout 12s): PASS
+=== CONTAINER PERMISSION TEST ===
+PASS: host chroot rejects regular file
+PASS: host chroot rejects missing path
+PASS: cont_info rejects negative id
+PASS: cont_info rejects out-of-range id
+PASS: host cont_info works
+PASS: host may enter the current host container
+PASS: same-container enter does not change process count
+PASS: host can create a container
+PASS: host can enter the new container
+PASS: container cannot create a container
+PASS: container cannot enter host
+PASS: container cannot enter another container
+PASS: container cannot chroot
+PASS: container cannot set a root
+PASS: container cannot set CPU quota
+PASS: container cannot set memory quota
+PASS: cont_info remains available inside container
+PASS: cont_info for host remains available inside container
+=== PERMISSION TEST FINISHED: 0 failures ===
+
+ctest (timeout 22s): PASS
+=== Container Test ===
+[Test 1] Host container
+Container 0: count=3, max=0, active=1
+[Test 2] Create container
+Created container ID: 1
+Container 1: count=0, max=3, active=1
+[Test 3] Invalid container limit
+PASS: negative limit rejected
+[Test 4] Enter container
+Container 1: count=1, max=3, active=1
+[Test 5] Process quota
+Created child PID 4
+Created child PID 5
+fork returned -1 at attempt 3
+Container 1: count=3, max=3, active=1
+[Test 6] Reap children
+Child reaped
+Child reaped
+Container 1: count=1, max=3, active=1
+[Test 7] Fork after quota release
+PASS: fork succeeded after quota release
+Container 1: count=1, max=3, active=1
+=== Container Test Finished ===
+
+setupc1 + roottest (timeout 24s): PASS
+PASS: /c1 root fixture ready
+=== ROOT DIRECTORY TEST ===
+PASS: open outside file before chroot
+PASS: set container root
+PASS: container root can only be set once
+PASS: chroot /c1
+PASS: chdir /
+PASS: pre-opened fd remains usable after chroot
+PASS: open /test.txt
+PASS: open test.txt
+PASS: open /../test.txt
+PASS: open /../../test.txt
+PASS: blocked /outside.txt
+PASS: blocked /../outside.txt
+PASS: blocked /../../outside.txt
+PASS: create file inside root
+PASS: unlink file inside root
+PASS: link file inside root
+PASS: open /linked.txt
+PASS: unlink linked file inside root
+PASS: link with parent traversal stays in root
+PASS: open /bounded_link.txt
+PASS: unlink bounded link
+PASS: unlink outside file remains blocked
+PASS: mkdir final dotdot rejected
+PASS: create directory for final dotdot test
+PASS: unlink final dotdot rejected
+PASS: remove test directory
+PASS: forked child retains root boundary
+PASS: chdir .. at root
+PASS: open test.txt
+INSIDE_EXEC_OK
+PASS: exec inside root
+PASS: blocked exec outside root
+PASS: exec outside root blocked
+PASS: open /test.txt
+PASS: blocked /outside.txt
+PASS: cont_enter applies container root
+=== ROOT TEST FINISHED: 0 failures ===
+
+chroottest /c1 (timeout 12s): PASS
+Changing root to: /c1
+chroot succeeded
+chdir to new root succeeded
+
+No test case reported FAIL. Historical evidence files were not modified.
