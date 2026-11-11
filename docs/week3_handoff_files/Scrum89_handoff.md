@@ -12,7 +12,7 @@ Hoàn thành khung chung Sub-task 8.2 cho các task 83, 85, 86, 87: bổ sung tr
 | 8.3 | chưa làm | — | Ngoài phạm vi |
 
 ## 3. File đã đổi (theo sub-task)
-kernel/proc.h, kernel/proc.c, kernel/syscall.h, kernel/syscall.c, kernel/sysproc.c, user/user.h, user/usys.pl, docs/Scrum89_handoff.md, docs/test_evidence/scrum89_subtask82_qemu.log.
+kernel/proc.h, kernel/proc.c, kernel/syscall.h, kernel/syscall.c, kernel/sysproc.c, user/user.h, user/usys.pl, docs/week3_handoff_files/Scrum89_handoff.md, docs/test_evidence/scrum89_subtask82_qemu.log.
 
 ## 4. Quyết định kỹ thuật và lý do
 container_info được khai báo riêng ở kernel/proc.h và user/user.h; hai bản giữ cùng thứ tự trường để đồng bộ layout. Các syscall mới chỉ là stub trả -1, chưa xử lý nghiệp vụ.

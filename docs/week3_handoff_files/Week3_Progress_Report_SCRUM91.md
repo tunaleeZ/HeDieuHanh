@@ -144,7 +144,7 @@ Team review:
 - 577eda7
 
 Main evidence files:
-- docs/Review_week3_SCRUM82_87.md
+- docs/week3_handoff_files/Review_week3_SCRUM82_87.md
 - docs/integration_test_matrix.md
 - docs/regression_defects.md
 - docs/test_evidence/scrum89_clean_build.log

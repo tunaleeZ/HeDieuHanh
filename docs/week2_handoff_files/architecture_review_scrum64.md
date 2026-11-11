@@ -232,7 +232,7 @@ SCRUM-88 documents test cases T01-T16 with evidence.
 Some cases PASS, others remain BLOCKED or NOT RUN.
 
 See:
-- docs/Review_week3_SCRUM82_87.md
+- docs/week3_handoff_files/Review_week3_SCRUM82_87.md
 - docs/integration_test_matrix.md
 - docs/regression_defects.md
 - docs/pid_namespace_design.md

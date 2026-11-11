@@ -204,7 +204,7 @@ Bằng chứng cần có: Chỉ làm sau phần cơ bản.
 - [ ] Xác minh thêm luồng bộ nhớ, timer, thu hồi tiến trình trên đúng nhánh Git nhóm.
 - [ ] Tổng hợp kết quả của thành viên process và filesystem.
 - [x] Đã có bản thảo giới hạn tài nguyên, sơ đồ kiến trúc và ánh xạ yêu cầu.
-- [x] Đã có ma trận kiểm thử ban đầu trong `docs/test_plan.md`.
+- [x] Đã có ma trận kiểm thử ban đầu trong `docs/week1/test_plan_vi_khong_bang.md`.
 - [ ] Nhóm rà soát Jira backlog, phân công và bằng chứng.
 
 **Cơ sở biên soạn:** tài liệu nhóm “Nhiệm vụ Tuần 1 – Lightweight Containers xv6-riscv” (các mục 1, 2, 7, 8, 9, 10) và ảnh/log mã nguồn đã được cung cấp. Mọi chi tiết triển khai chưa hiện trong bằng chứng đều phải được kiểm chứng trên repository của nhóm.

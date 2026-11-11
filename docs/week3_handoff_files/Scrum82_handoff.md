@@ -2,7 +2,7 @@
 Cập nhật lần cuối: 2026-11-11  | Trạng thái task: xong chờ review
 
 ## 1. Mục tiêu và Acceptance Criteria
-Chốt bảy câu hỏi trong mục 7 của `docs/architecture_review_scrum64.md` theo các quyết định D1–D6; hoàn tất API và tham số trong `docs/cpu_quota_design.md`; bổ sung thiết kế quota vào `docs/memory_accounting.md` sau khi đối chiếu kernel/vm.c, proc.c và exec.c. Chỉ sửa Markdown. Người dùng sẽ tự xác nhận quyết định trên Jira.
+Chốt bảy câu hỏi trong mục 7 của `docs/week2_handoff_files/architecture_review_scrum64.md` theo các quyết định D1–D6; hoàn tất API và tham số trong `docs/cpu_quota_design.md`; bổ sung thiết kế quota vào `docs/memory_accounting.md` sau khi đối chiếu kernel/vm.c, proc.c và exec.c. Chỉ sửa Markdown. Người dùng sẽ tự xác nhận quyết định trên Jira.
 
 ## 2. Trạng thái sub-task
 | Sub-task | Trạng thái (chưa làm / đã đề xuất / đã duyệt / đã commit) | Commit hash | Ghi chú |
@@ -12,9 +12,9 @@ Chốt bảy câu hỏi trong mục 7 của `docs/architecture_review_scrum64.md
 | 1.3 Add quota design section to memory_accounting.md | đã commit | — | Bảng hook đã rà vm.c, proc.c, exec.c; commit cuối của task nên hash được xem trong git log |
 
 ## 3. File đã đổi (theo sub-task)
-Sub-task 1.1: `docs/architecture_review_scrum64.md`, `docs/Scrum82_handoff.md`.
-Sub-task 1.2: `docs/cpu_quota_design.md`, `docs/Scrum82_handoff.md`.
-Sub-task 1.3: `docs/memory_accounting.md`, `docs/Scrum82_handoff.md`.
+Sub-task 1.1: `docs/week2_handoff_files/architecture_review_scrum64.md`, `docs/week3_handoff_files/Scrum82_handoff.md`.
+Sub-task 1.2: `docs/cpu_quota_design.md`, `docs/week3_handoff_files/Scrum82_handoff.md`.
+Sub-task 1.3: `docs/memory_accounting.md`, `docs/week3_handoff_files/Scrum82_handoff.md`.
 
 ## 4. Quyết định kỹ thuật và lý do
 Áp dụng quyết định D1–D6 đã chốt trong yêu cầu SCRUM-82. Sub-task 1.1 ghi cả Quyet dinh, Ly do, He qua cho từng câu hỏi, cùng các số syscall 28–31 và thứ tự lock D3. Sub-task 1.2 chốt quota soft, chu kỳ mặc định 20, quota 0 là unlimited, host miễn throttle, API cont_set_cpu syscall 30, charge tại usertrap/kerneltrap và reset khi scheduler gọi container_cpu_allowed(). Sub-task 1.3 xác định các hook memory quota, truyền owner container tường minh và rollback theo các đường cấp phát/giải phóng đã có.

@@ -4,7 +4,7 @@ Project: Lightweight Containers on xv6-riscv
 Branch: main
 Environment: QEMU, 128 MiB, 3 harts
 
-Test plan: docs/test_plan_vi_khong_bang.md
+Test plan: docs/week1/test_plan_vi_khong_bang.md
 
 Status definitions:
 - PASS: Supported by actual test evidence in stated scope.

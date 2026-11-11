@@ -15,8 +15,8 @@ Scope: Architecture review and CPU quota design
 ## 2. Tai lieu ban giao
 
 - docs/cpu_quota_design.md
-- docs/architecture_review_scrum64.md
-- docs/architecture_draft_vi.md (Sprint 1 reference)
+- docs/week2_handoff_files/architecture_review_scrum64.md
+- docs/week1/architecture_draft_vi.md (Sprint 1 reference)
 
 ## 3. Nguon ma da khao sat
 

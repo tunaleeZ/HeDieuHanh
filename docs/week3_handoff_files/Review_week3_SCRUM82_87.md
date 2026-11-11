@@ -76,7 +76,7 @@ Vị trí: `user/setupc1.c`, dòng 62–80.
 
 ### F7 — Minor: tài liệu CPU quota còn trạng thái cũ
 
-Vị trí: `docs/cpu_quota_design.md`, mục 2 và mục 10; `docs/architecture_review_scrum64.md`, kết luận mục 8.
+Vị trí: `docs/cpu_quota_design.md`, mục 2 và mục 10; `docs/week2_handoff_files/architecture_review_scrum64.md`, kết luận mục 8.
 
 Tài liệu nói accounting/scheduler enforcement chưa triển khai, nhưng hiện code có `container_charge_tick()`, `container_cpu_allowed()` và scheduler enforcement. Mô tả API cuối dùng `cont_set_cpu`, không còn tên syscall cũ.
 
@@ -84,7 +84,7 @@ Tài liệu nói accounting/scheduler enforcement chưa triển khai, nhưng hi�
 
 ### F8 — Minor: handoff lỗi thời/thiếu hash và commit benchmark chạm handoff task khác
 
-Vị trí: `docs/Scrum89_handoff.md`, mục 2 và 7; handoff Scrum82/83/84/87; commit `cb8ac8b`.
+Vị trí: `docs/week3_handoff_files/Scrum89_handoff.md`, mục 2 và 7; handoff Scrum82/83/84/87; commit `cb8ac8b`.
 
 Scrum89 vẫn ghi 8.2 chờ commit/hash `—` dù `7e43876` đã có. Một số handoff Scrum82/83/84/87 để hash cuối trống hoặc ghi “xem trong git log”. `cb8ac8b` sửa handoff Scrum85 và Scrum86 dù commit chỉ mô tả benchmark Scrum87.
 
