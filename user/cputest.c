@@ -2,9 +2,9 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-#define TEST_TICKS 200
+#define TEST_TICKS   200
 #define WINDOW_TICKS 20
-#define BATCH 1000
+#define BATCH        1000
 
 struct cpu_result {
   int id;
@@ -24,8 +24,8 @@ print_cpu_info(const char *label)
     printf("FAIL: cont_info %s\n", label);
     return -1;
   }
-  printf("cont_info %s: id=%d period=%ld quota=%ld used=%ld\n", label,
-         info.id, (long)info.cpu_period_ticks, (long)info.cpu_quota_ticks,
+  printf("cont_info %s: id=%d period=%ld quota=%ld used=%ld\n", label, info.id,
+         (long)info.cpu_period_ticks, (long)info.cpu_quota_ticks,
          (long)info.cpu_used_ticks);
   return 0;
 }
@@ -85,8 +85,8 @@ main(void)
   uint64 a_iterations = 0, b_iterations = 0;
   int a_zero_windows = -1;
 
-  printf("=== CPU QUOTA TEST (%d ticks, period %d, quota 5) ===\n",
-         TEST_TICKS, WINDOW_TICKS);
+  printf("=== CPU QUOTA TEST (%d ticks, period %d, quota 5) ===\n", TEST_TICKS,
+         WINDOW_TICKS);
   target_container_id = cont_create(0);
   if (target_container_id < 0 ||
       cont_set_cpu(target_container_id, 5, WINDOW_TICKS) < 0) {
@@ -150,8 +150,8 @@ main(void)
       a_iterations = result.iterations;
       a_zero_windows = result.zero_windows;
       for (int i = 0; i < TEST_TICKS / WINDOW_TICKS; i++)
-        printf("A window %d (%d ticks): %ld iterations\n", i + 1,
-               WINDOW_TICKS, (long)result.window_iterations[i]);
+        printf("A window %d (%d ticks): %ld iterations\n", i + 1, WINDOW_TICKS,
+               (long)result.window_iterations[i]);
     } else {
       b_iterations = result.iterations;
     }

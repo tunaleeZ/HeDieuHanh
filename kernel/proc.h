@@ -79,21 +79,21 @@ struct trapframe {
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Lightweight container configuration.
-#define NCONTAINER 8
+#define NCONTAINER         8
 #define CPU_DEFAULT_PERIOD 20
 
 // Container structure.
 struct container {
-  int id;               // Container ID
-  int proc_count;       // Number of processes in container
-  int max_proc;         // Maximum number of processes (0 = unlimited)
-  int active;           // Whether this container is active
-  struct inode *root;   // 0 = no root set
-  uint64 cpu_period_ticks;  // default 20
-  uint64 cpu_quota_ticks;   // 0 = unlimited
+  int id;                  // Container ID
+  int proc_count;          // Number of processes in container
+  int max_proc;            // Maximum number of processes (0 = unlimited)
+  int active;              // Whether this container is active
+  struct inode *root;      // 0 = no root set
+  uint64 cpu_period_ticks; // default 20
+  uint64 cpu_quota_ticks;  // 0 = unlimited
   uint64 cpu_used_ticks;
   uint64 cpu_period_start;
-  int max_pages;        // 0 = unlimited
+  int max_pages; // 0 = unlimited
   int pages_used;
   struct spinlock lock; // Protect container data
 };

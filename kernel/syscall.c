@@ -147,7 +147,7 @@ static uint64 (*syscalls[])(void) = {
   [SYS_cont_set_cpu] = sys_cont_set_cpu,
   [SYS_cont_set_mem] = sys_cont_set_mem,
   // clang-format on
-  [SYS_sysinfo]     sys_sysinfo,
+  [SYS_sysinfo] sys_sysinfo,
 };
 
 void

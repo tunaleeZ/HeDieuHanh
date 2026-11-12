@@ -26,8 +26,7 @@ main(void)
   check("host chroot rejects regular file", chroot("/echo") < 0);
   check("host chroot rejects missing path", chroot("/khong_ton_tai") < 0);
   check("cont_info rejects negative id", cont_info(-1, &info) < 0);
-  check("cont_info rejects out-of-range id",
-        cont_info(999, &info) < 0);
+  check("cont_info rejects out-of-range id", cont_info(999, &info) < 0);
 
   result = cont_info(0, &before);
   check("host cont_info works", result == 0);

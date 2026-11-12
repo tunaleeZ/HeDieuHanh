@@ -2,7 +2,7 @@
 #include "kernel/sysinfo.h"
 #include "user/user.h"
 
-#define PAGE_SIZE 4096
+#define PAGE_SIZE  4096
 #define TEST_PAGES 32
 
 int
@@ -48,8 +48,7 @@ main(void)
   printf("Free memory after: %ld bytes\n", after.freemem);
   printf("Free memory released: %ld bytes\n", released.freemem);
 
-  printf("Memory used: %ld bytes\n",
-         (long)(before.freemem - after.freemem));
+  printf("Memory used: %ld bytes\n", (long)(before.freemem - after.freemem));
 
   printf("Memory recovered: %ld bytes\n",
          (long)(released.freemem - after.freemem));

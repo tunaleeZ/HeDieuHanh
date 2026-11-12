@@ -21,8 +21,7 @@ main(void)
 
   printf("Elapsed ticks: %d\n", elapsed);
   printf("Iterations: %ld\n", iterations);
-  printf("Iterations/tick: %ld\n",
-         elapsed ? iterations / elapsed : 0);
+  printf("Iterations/tick: %ld\n", elapsed ? iterations / elapsed : 0);
 
   exit(0);
 }

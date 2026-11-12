@@ -57,4 +57,3 @@ main(int argc, char *argv[])
   printf("Copy completed\n");
   exit(0);
 }
-

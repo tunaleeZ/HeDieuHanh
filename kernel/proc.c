@@ -909,11 +909,12 @@ kcontainer_set_cpu(int id, int quota, int period)
   struct container *c;
   uint64 now;
 
-  if (!container_is_host() || id <= 0 || id >= NCONTAINER ||
-      quota < 0 || period <= 0 || quota > period)
+  if (!container_is_host() || id <= 0 || id >= NCONTAINER || quota < 0 ||
+      period <= 0 || quota > period)
     return -1;
 
-  now = ticks; // Approximate sample; do not nest tickslock with container->lock.
+  now =
+    ticks; // Approximate sample; do not nest tickslock with container->lock.
   c = &containers[id];
   acquire(&c->lock);
   if (!c->active) {
@@ -975,7 +976,8 @@ container_cpu_allowed(struct container *c)
   if (c->cpu_quota_ticks == 0) {
     allowed = 1;
   } else {
-    if (c->cpu_period_ticks > 0 && now - c->cpu_period_start >= c->cpu_period_ticks) {
+    if (c->cpu_period_ticks > 0 &&
+        now - c->cpu_period_start >= c->cpu_period_ticks) {
       elapsed = now - c->cpu_period_start;
       periods = elapsed / c->cpu_period_ticks;
       c->cpu_period_start += periods * c->cpu_period_ticks;

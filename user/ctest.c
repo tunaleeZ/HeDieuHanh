@@ -13,9 +13,10 @@ print_info(int id)
     return;
   }
 
-  printf("Container %d: count=%d, max=%d, active=%d, max_pages=%d, pages_used=%d\n",
-         info.id, info.proc_count, info.max_proc, info.active,
-         info.max_pages, info.pages_used);
+  printf(
+    "Container %d: count=%d, max=%d, active=%d, max_pages=%d, pages_used=%d\n",
+    info.id, info.proc_count, info.max_proc, info.active, info.max_pages,
+    info.pages_used);
 }
 
 int
@@ -49,7 +50,8 @@ main(void)
   printf("[Test 2b] Memory quota configuration\n");
   if (cont_set_mem(id, 64) == 0) {
     struct container_info info;
-    if (cont_info(id, &info) == 0 && info.max_pages == 64 && info.pages_used == 0)
+    if (cont_info(id, &info) == 0 && info.max_pages == 64 &&
+        info.pages_used == 0)
       printf("PASS: max_pages read back through cont_info\n");
     else {
       printf("FAIL: memory quota readback mismatch\n");

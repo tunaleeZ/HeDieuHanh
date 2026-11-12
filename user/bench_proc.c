@@ -62,8 +62,7 @@ main(void)
   printf("Free memory before: %ld\n", before.freemem);
   printf("Free memory after: %ld\n", after.freemem);
 
-  if (success == TEST_FORKS &&
-      before.nproc == after.nproc &&
+  if (success == TEST_FORKS && before.nproc == after.nproc &&
       before.freemem == after.freemem) {
     printf("PASS: process benchmark\n");
   } else {

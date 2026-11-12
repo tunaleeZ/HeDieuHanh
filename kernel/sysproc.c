@@ -197,8 +197,7 @@ sys_sysinfo(void)
   info.freemem = kfreemem();
   info.nproc = knproc();
 
-  if (copyout(p->pagetable, p->sz, addr,
-              (char *)&info, sizeof(info)) < 0)
+  if (copyout(p->pagetable, p->sz, addr, (char *)&info, sizeof(info)) < 0)
     return -1;
 
   return 0;
