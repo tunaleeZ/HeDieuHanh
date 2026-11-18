@@ -539,11 +539,27 @@ void
 reparent(struct proc *p)
 {
   struct proc *pp;
+  struct proc *adopter = initproc;
+
+  // Keep children inside a live PID namespace when their parent exits.
+  // A namespace-init exit closes the namespace, so its children go to init.
+  if (p->container != 0 && p->container->id != 0 && p->virtual_pid != 1) {
+    for (pp = proc; pp < &proc[NPROC]; pp++) {
+      acquire(&pp->lock);
+      if (pp != p && pp->state != UNUSED && pp->state != ZOMBIE &&
+          pp->container == p->container && pp->virtual_pid == 1) {
+        adopter = pp;
+        release(&pp->lock);
+        break;
+      }
+      release(&pp->lock);
+    }
+  }
 
   for (pp = proc; pp < &proc[NPROC]; pp++) {
     if (pp->parent == p) {
-      pp->parent = initproc;
-      wakeup(initproc);
+      pp->parent = adopter;
+      wakeup(adopter);
     }
   }
 }
@@ -555,9 +571,31 @@ void
 kexit(int status)
 {
   struct proc *p = myproc();
+  struct proc *pp;
 
   if (p == initproc)
     panic("init exiting");
+
+  // Closing the namespace prevents new fork/entry reservations. Kill every
+  // remaining member so no process outlives its namespace-init.
+  if (p->container != 0 && p->container->id != 0 && p->virtual_pid == 1) {
+    acquire(&p->container->lock);
+    p->container->next_virtual_pid = 0;
+    release(&p->container->lock);
+
+    for (pp = proc; pp < &proc[NPROC]; pp++) {
+      if (pp == p)
+        continue;
+      acquire(&pp->lock);
+      if (pp->state != UNUSED && pp->state != ZOMBIE &&
+          pp->container == p->container) {
+        pp->killed = 1;
+        if (pp->state == SLEEPING)
+          pp->state = RUNNABLE;
+      }
+      release(&pp->lock);
+    }
+  }
 
   // Close all open files.
   for (int fd = 0; fd < NOFILE; fd++) {
@@ -618,7 +656,7 @@ kwait(uint64 addr)
         havekids = 1;
         if (pp->state == ZOMBIE) {
           // Found one.
-          pid = pp->pid;
+          pid = process_visible_pid(p, pp);
           if (addr != 0 &&
               copyout(p->pagetable, p->sz, addr, (char *)&pp->xstate,
                       sizeof(pp->xstate)) < 0) {
@@ -840,13 +878,15 @@ int
 kkill(int pid)
 {
   struct proc *p;
+  int global_pid;
 
-  if (pid == 0)
+  global_pid = global_pid_from_visible(myproc(), pid);
+  if (global_pid <= 0)
     return -1;
 
   for (p = proc; p < &proc[NPROC]; p++) {
     acquire(&p->lock);
-    if (p->pid == pid) {
+    if (p->pid == global_pid && p->state != UNUSED && p->state != ZOMBIE) {
       p->killed = 1;
       if (p->state == SLEEPING) {
         // Wake process from sleep().
@@ -1121,11 +1161,15 @@ kcontainer_enter(int id)
   }
   release(&wait_lock);
 
-  // Check the root and reserve a process slot/PID atomically.
+  // Lock the process before the container, matching freeproc's p->lock to
+  // container->lock order. Publish membership with the PID reservation so a
+  // namespace-init exit either sees this process or closes entry first.
+  acquire(&p->lock);
   acquire(&new->lock);
   if (!new->active || new->root == 0 || new->next_virtual_pid == 0 ||
       (new->max_proc > 0 && new->proc_count >= new->max_proc)) {
     release(&new->lock);
+    release(&p->lock);
     return -1;
   }
   root = new->root;
@@ -1135,12 +1179,9 @@ kcontainer_enter(int id)
   else
     new->next_virtual_pid++;
   new->proc_count++;
-  release(&new->lock);
-
-  // Switch container.
-  acquire(&p->lock);
   p->container = new;
   p->virtual_pid = virtual_pid;
+  release(&new->lock);
   release(&p->lock);
 
   // Release quota in the old container.

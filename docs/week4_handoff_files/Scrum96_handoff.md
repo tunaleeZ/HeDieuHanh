@@ -23,8 +23,8 @@ Triển khai PID namespace theo thiết kế SCRUM-90, giữ global PID cho kern
 | Sub-task | Trạng thái | Commit | Ghi chú |
 |---|---|---|---|
 | 2.1 Implement virtual PID data structures | Hoàn tất | `f3beffb` | Cấu trúc và allocator entry/fork; ctest cho thấy vpid 1,2,3; build/forktest PASS. |
-| 2.2 Implement PID allocation and translation | Hoàn tất | Tiếp theo: `feat: Implement PID allocation and translation` | Helpers tra visible PID và dịch virtual PID; build, ctest, forktest PASS. |
-| 2.3 Update process syscalls | Chưa làm | — | Cập nhật getpid, fork return, wait, kill, reparent và namespace-init. |
+| 2.2 Implement PID allocation and translation | Hoàn tất | `ec20c0d` | Helpers tra visible PID và dịch virtual PID; build, ctest, forktest PASS. |
+| 2.3 Update process syscalls | Hoàn tất | `feat: Update process syscalls` | getpid/wait/kill dùng vpid; entry publication atomic với PID reserve; namespace-init exit; build, ctest, forktest PASS. |
 | 2.4 Test T03 and regression | Chưa làm | — | Tạo T03, chạy clean build và regression, lưu log. |
 
 ## Thiết kế đã thống nhất
@@ -80,6 +80,12 @@ Chính sách namespace-init đã được ghi nhận trong thiết kế nhưng p
 `process_visible_pid(viewer, target)` trả virtual PID khi cùng container, global PID nếu viewer thuộc host, và -1 khi container không được quan sát target. Caller phải giữ `target->lock`. `global_pid_from_visible(viewer, pid)` chuyển PID host trực tiếp và tra process đang sống trong đúng container cho viewer không-host; hàm chỉ trả global PID, không để lộ con trỏ process. `kernel/defs.h` khai báo hai helper để phần syscall dùng ở 2.3.
 
 Đã chạy `make kernel/kernel`, `ctest`, `forktest` trong QEMU: build thành công; `ctest` báo 0 failures và quota/fork/wait hiện tại vẫn đúng; `forktest` báo `fork test OK`. Đây mới là kiểm tra helper build cùng allocator hiện hữu, chưa kiểm tra syscall đã dùng translation; phần tích hợp và race/lifecycle nằm trong 2.3–2.4.
+
+## 2.3 — Process syscalls và namespace-init
+
+`sys_getpid()` trả `virtual_pid`. `kwait()` vẫn duyệt theo quan hệ parent dưới `wait_lock`, giữ `pp->lock` khi lấy PID trả về qua `process_visible_pid()`. `kkill()` dịch PID người gọi sang global PID rồi tìm/đánh dấu victim dưới `p->lock`; namespace không-host chỉ tra cùng container, host giữ global PID. Zombie/slot UNUSED không còn được kill thành công.
+
+Khi process PID 1 trong container thoát, `kexit()` đóng allocator dưới container lock và đánh dấu thành viên khác killed, đánh thức member đang ngủ. Khi process khác trong namespace thoát, `reparent()` chuyển orphan cho PID 1 còn sống; khi chính PID 1 thoát (hoặc không còn leader sống), orphan chuyển về global init. Thứ tự khóa được giữ `wait_lock -> p->lock -> container->lock`; thao tác đóng allocator thả container lock trước khi quét process table. `kcontainer_enter()` giữ process lock rồi container lock, đồng thời công bố membership và PID trước khi thả hai lock. Do đó namespace-init exit hoặc thấy process mới vào và kill nó, hoặc đóng allocator trước entry reservation khiến entry thất bại. Build `make kernel/kernel` thành công; QEMU 3 hart: `ctest` hoàn tất với 0 failures, `forktest` in `fork test OK`.
 
 ## Phát hiện và rủi ro
 
