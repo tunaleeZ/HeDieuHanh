@@ -77,6 +77,10 @@ main(void)
 
   // Test 4: Enter the new container.
   printf("\n[Test 4] Enter container\n");
+  if (cont_setroot(id, "/") < 0) {
+    printf("cont_setroot failed\n");
+    exit(1);
+  }
   if (cont_enter(id) < 0) {
     printf("cont_enter failed\n");
     exit(1);

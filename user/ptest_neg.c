@@ -42,6 +42,7 @@ main(void)
     exit(1);
   }
 
+  check("host can configure a root before entry", cont_setroot(id, "/") == 0);
   check("host can enter the new container", cont_enter(id) == 0);
 
   check("container cannot create a container", cont_create(4) < 0);

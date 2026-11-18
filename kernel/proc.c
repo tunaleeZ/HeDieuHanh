@@ -1018,9 +1018,17 @@ kcontainer_enter(int id)
   if (old == new)
     return 0;
 
-  // Reserve quota in the new container first.
-  if (container_reserve(new) < 0)
+  // A process may enter only after the root is configured. Check the root
+  // and reserve a process slot atomically so setroot cannot race with entry.
+  acquire(&new->lock);
+  if (!new->active || new->root == 0 ||
+      (new->max_proc > 0 && new->proc_count >= new->max_proc)) {
+    release(&new->lock);
     return -1;
+  }
+  root = new->root;
+  new->proc_count++;
+  release(&new->lock);
 
   // Switch container.
   acquire(&p->lock);
@@ -1030,24 +1038,18 @@ kcontainer_enter(int id)
   // Release quota in the old container.
   container_release(old);
 
-  // A container root is immutable after it is set. Snapshot it under the
-  // container lock, then acquire the process reference outside that lock.
-  acquire(&new->lock);
-  root = new->root;
-  release(&new->lock);
+  // The root is immutable after the reservation above prevents setroot.
+  // Acquire process references outside the container lock.
+  root = idup(root);
+  oldroot = p->root;
+  oldcwd = p->cwd;
+  p->root = root;
+  p->cwd = idup(root);
 
-  if (root != 0) {
-    root = idup(root);
-    oldroot = p->root;
-    oldcwd = p->cwd;
-    p->root = root;
-    p->cwd = idup(root);
-
-    begin_op();
-    iput(oldcwd);
-    iput(oldroot);
-    end_op();
-  }
+  begin_op();
+  iput(oldcwd);
+  iput(oldroot);
+  end_op();
 
   return 0;
 }
@@ -1062,13 +1064,13 @@ kcontainer_setroot(int id, struct inode *root)
   if (!container_is_host())
     return -1;
 
-  if (id < 0 || id >= NCONTAINER || root == 0)
+  if (id <= 0 || id >= NCONTAINER || root == 0)
     return -1;
 
   c = &containers[id];
   acquire(&c->lock);
 
-  if (!c->active || c->root != 0) {
+  if (!c->active || c->root != 0 || c->proc_count > 0) {
     release(&c->lock);
     return -1;
   }

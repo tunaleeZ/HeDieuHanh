@@ -89,7 +89,8 @@ main(void)
          WINDOW_TICKS);
   target_container_id = cont_create(0);
   if (target_container_id < 0 ||
-      cont_set_cpu(target_container_id, 5, WINDOW_TICKS) < 0) {
+      cont_set_cpu(target_container_id, 5, WINDOW_TICKS) < 0 ||
+      cont_setroot(target_container_id, "/") < 0) {
     printf("FAIL: create/configure CPU quota\n");
     exit(1);
   }

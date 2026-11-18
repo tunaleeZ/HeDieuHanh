@@ -16,8 +16,8 @@ Khắc phục F1: không cho tiến trình vào container chưa cấu hình root
 
 | Sub-task | Trạng thái | Commit hash | Ghi chú |
 |---|---|---|---|
-| 1.1 Survey root-unset bug | Hoàn tất | Điền khi cập nhật sub-task 1.2 | Khảo sát code và tái hiện runtime F1; chính sách A và gộp F10 đã được duyệt. |
-| 1.2 Implement fix | Chưa làm | — | Chặn vào container chưa có root; cập nhật các test cũ cần root `/`. |
+| 1.1 Survey root-unset bug | Hoàn tất | `acb5e50` | Khảo sát code và tái hiện runtime F1; chính sách A và gộp F10 đã được duyệt. |
+| 1.2 Implement fix | Hoàn tất | Điền khi cập nhật sub-task 1.3 | Kernel từ chối root-unset và F10; test cũ đặt `/` rõ ràng. Build sạch và regression mục tiêu PASS. |
 | 1.3 Add negative tests | Chưa làm | — | Kiểm tra root-unset, proc_count, F10 và ranh giới root `/c1`; lưu log T13. |
 | 1.4 Run regression and handoff | Chưa làm | — | Build sạch, regression, cập nhật ma trận và defect, đối chiếu log tuần 3. |
 
@@ -75,6 +75,40 @@ Người dùng cũng duyệt gộp F10: `cont_setroot()` từ chối `id <= 0`. 
 Phương án B (root mặc định `/` khi tạo container) bị loại vì container mới mặc định có quyền truy cập filesystem host, trái với fail-closed của F1. Phương án C (cho vào rồi đổi root) bị loại vì process có thể chạy và truy cập filesystem trước khi root được áp dụng; đồng thời setroot sau khi process đã vào xung đột với quy tắc root chỉ đặt một lần và mở race giữa path lookup với thay root.
 
 File dự kiến đổi ở 1.2: `kernel/proc.c`, `user/ctest.c`, `user/cputest.c`, `user/ptest_neg.c`. File dự kiến đổi ở 1.3: `user/ptest_neg.c`, có thể `user/roottest.c`, `docs/test_evidence/T13_f1_enforcement.txt`.
+
+### 1.2 — Triển khai fix và kiểm tra
+
+`kcontainer_enter()` hiện kiểm tra `active`, root và process quota dưới `new->lock`, đồng thời reserve slot trước khi nhả lock. Root rỗng hoặc quota đầy trả `-1` mà không đổi `proc_count` hay `p->container`. Việc reserve cùng khóa với `kcontainer_setroot()` loại race: setroot chỉ thành công khi `proc_count == 0`; root không thể được đặt sau khi enter đã reserve slot. Sau khi nhả container lock, kernel `idup()` root, thay root/cwd, rồi thả hai inode reference cũ trong transaction. `kcontainer_setroot()` từ chối ID 0, container không active, root đã đặt và container có process.
+
+Các test cũ `ctest`, `cputest`, `ptest_neg` đặt root `/` rõ ràng trước `cont_enter()` để tiếp tục kiểm tra process quota, CPU quota và quyền quản trị mà không dựa vào hành vi root-unset.
+
+Build chạy: `make clean && make && make fs.img` — hoàn tất thành công.
+
+Lệnh runtime tại shell xv6, chạy từng lệnh một trên boot sạch:
+
+```text
+$ setupc1
+PASS: /c1 root fixture ready
+$ roottest
+=== ROOT TEST FINISHED: 0 failures ===
+$ chroottest /c1
+Changing root to: /c1
+chroot succeeded
+chdir to new root succeeded
+$ ctest
+=== Container Test Finished: 0 failures ===
+$ ptest_neg
+=== PERMISSION TEST FINISHED: 0 failures ===
+$ cputest
+RESULT: container A iterations=215939000 zero_windows=0
+RESULT: host B iterations=971168000
+=== CPU QUOTA TEST PASS ===
+$ forktest
+fork test
+fork test OK
+```
+
+`roottest` cũng in PASS cho root boundary, `..`, fork child root, `chdir ..` ở root, exec trong root và từ chối exec ngoài root; toàn bộ kết thúc 0 failures. `ctest` xác nhận process quota 3, từ chối fork khi đủ quota, thu hồi slot sau wait và fork thành công lại. `ptest_neg` xác nhận host-only administration và chuyển container một chiều. Đây là output thật từ QEMU; build không lưu log riêng trong sub-task 1.2.
 
 ## Phát hiện và rủi ro
 
