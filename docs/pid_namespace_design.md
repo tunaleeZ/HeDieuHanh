@@ -177,3 +177,7 @@ Các quyết định dưới đây được duyệt trước khi triển khai SC
 - Cấp phát virtual PID được tuần tự hóa bằng `container.lock`. Lookup process giữ `p->lock` khi so sánh PID/container và thay đổi trạng thái. Khi cần nhiều lock, giữ thứ tự `wait_lock -> p->lock -> container->lock`; không giữ container lock qua thao tác có thể sleep.
 
 SCRUM96 gộp phần cấp phát entry/fork tối thiểu vào sub-task 2.1 để kiểm tra được tính duy nhất virtual PID trước khi commit. Sub-task 2.2 tập trung vào lookup và dịch PID; sub-task 2.3 tích hợp các syscall.
+
+## 12. SCRUM96 PID translation helpers
+
+`process_visible_pid(viewer, target)` assumes the caller holds `target->lock`. It returns the target virtual PID to a same-container viewer, the target global PID to a host viewer, or -1 when a non-host viewer cannot observe the target. `global_pid_from_visible(viewer, pid)` passes a positive host PID through unchanged; for a non-host viewer it scans live processes while holding one process lock at a time and returns the matching global PID only. It never returns or retains a process pointer, so callers must perform a fresh locked lookup before changing process state. Syscall integration is part of SCRUM96 sub-task 2.3.

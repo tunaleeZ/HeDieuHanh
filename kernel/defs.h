@@ -94,6 +94,8 @@ void            setkilled(struct proc*);
 struct cpu*     mycpu(void);
 struct proc*    myproc();
 int             container_is_host(void);
+int             process_visible_pid(struct proc *, struct proc *);
+int             global_pid_from_visible(struct proc *, int);
 void            procinit(void);
 void            scheduler(void) __attribute__((noreturn));
 void            sched(void);

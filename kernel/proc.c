@@ -93,6 +93,52 @@ container_allocate_virtual_pid(struct container *c)
   return pid;
 }
 
+// Return the PID that viewer is allowed to observe for target. The host sees
+// global PIDs across containers; a container sees only its own virtual PIDs.
+// Caller must hold target->lock.
+int
+process_visible_pid(struct proc *viewer, struct proc *target)
+{
+  if (viewer == 0 || target == 0 || viewer->container == 0 ||
+      target->container == 0)
+    return -1;
+
+  if (viewer->container == target->container)
+    return target->virtual_pid;
+  if (viewer->container->id == 0)
+    return target->pid;
+  return -1;
+}
+
+// Translate a PID supplied by viewer into a global PID. For a container,
+// lookup is restricted to that container's namespace. The scan holds one
+// process lock at a time and returns only the global PID, never a proc pointer.
+int
+global_pid_from_visible(struct proc *viewer, int virtual_pid)
+{
+  struct proc *p;
+  int global_pid = -1;
+
+  if (viewer == 0 || viewer->container == 0 || virtual_pid <= 0)
+    return -1;
+
+  if (viewer->container->id == 0)
+    return virtual_pid;
+
+  for (p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->state != UNUSED && p->state != ZOMBIE &&
+        p->container == viewer->container && p->virtual_pid == virtual_pid) {
+      global_pid = p->pid;
+      release(&p->lock);
+      break;
+    }
+    release(&p->lock);
+  }
+
+  return global_pid;
+}
+
 // Reserve user pages against a container's configured limit.
 int
 container_reserve_pages(struct container *c, int n)

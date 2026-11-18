@@ -22,8 +22,8 @@ Triển khai PID namespace theo thiết kế SCRUM-90, giữ global PID cho kern
 
 | Sub-task | Trạng thái | Commit | Ghi chú |
 |---|---|---|---|
-| 2.1 Implement virtual PID data structures | Hoàn tất | Điền khi cập nhật 2.2 | Cấu trúc và allocator entry/fork; ctest cho thấy vpid 1,2,3; build/forktest PASS. |
-| 2.2 Implement PID allocation and translation | Chưa làm | — | Xây dựng lookup/dịch PID và kiểm tra lifecycle/race. |
+| 2.1 Implement virtual PID data structures | Hoàn tất | `f3beffb` | Cấu trúc và allocator entry/fork; ctest cho thấy vpid 1,2,3; build/forktest PASS. |
+| 2.2 Implement PID allocation and translation | Hoàn tất | Tiếp theo: `feat: Implement PID allocation and translation` | Helpers tra visible PID và dịch virtual PID; build, ctest, forktest PASS. |
 | 2.3 Update process syscalls | Chưa làm | — | Cập nhật getpid, fork return, wait, kill, reparent và namespace-init. |
 | 2.4 Test T03 and regression | Chưa làm | — | Tạo T03, chạy clean build và regression, lưu log. |
 
@@ -74,6 +74,12 @@ fork test OK
 QEMU output xác nhận container ID 1 có process đầu tiên virtual PID 1 và hai child lần lượt là 2,3; global PID tương ứng là 3,4,5, không trùng nhau. `ctest` cũng đạt process limit, reap child và fork lại sau giải phóng quota. `forktest` PASS. Output build/runtime đã được thấy trực tiếp; log thử tạm nằm ngoài repo tại `/tmp/scrum96_21_qemu_final.log`.
 
 Chính sách namespace-init đã được ghi nhận trong thiết kế nhưng phần kill/reparent/đóng namespace sẽ được triển khai ở 2.3; 2.1 chưa tuyên bố lifecycle đó đã chạy.
+
+## 2.2 — Lookup và dịch PID
+
+`process_visible_pid(viewer, target)` trả virtual PID khi cùng container, global PID nếu viewer thuộc host, và -1 khi container không được quan sát target. Caller phải giữ `target->lock`. `global_pid_from_visible(viewer, pid)` chuyển PID host trực tiếp và tra process đang sống trong đúng container cho viewer không-host; hàm chỉ trả global PID, không để lộ con trỏ process. `kernel/defs.h` khai báo hai helper để phần syscall dùng ở 2.3.
+
+Đã chạy `make kernel/kernel`, `ctest`, `forktest` trong QEMU: build thành công; `ctest` báo 0 failures và quota/fork/wait hiện tại vẫn đúng; `forktest` báo `fork test OK`. Đây mới là kiểm tra helper build cùng allocator hiện hữu, chưa kiểm tra syscall đã dùng translation; phần tích hợp và race/lifecycle nằm trong 2.3–2.4.
 
 ## Phát hiện và rủi ro
 
