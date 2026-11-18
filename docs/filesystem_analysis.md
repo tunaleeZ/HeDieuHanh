@@ -242,3 +242,7 @@ The current kernel already includes:
 The relevant implementation points are in `kernel/proc.h`, `kernel/proc.c`, `kernel/fs.c`, `kernel/sysfile.c`, `kernel/syscall.h`, and `user/roottest.c`.
 
 This means the design work is no longer only a proposal; the repository already reflects the implemented path-boundary and process-root enforcement behavior.
+
+## 12. Container root requirement
+
+`cont_enter(id)` must fail while the target container has no configured root. Entering without a root would leave the process's previous `root` and `cwd` in place, allowing path resolution to continue through the host filesystem. Configure the container root before entry; tests that intentionally need the host filesystem inside a container must set `/` explicitly. A container root is set once while the container is active and has no processes. `cont_setroot()` must reject container ID 0 so the host root remains outside container configuration.
