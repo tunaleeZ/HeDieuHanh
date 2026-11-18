@@ -30,7 +30,7 @@ extern char trampoline[]; // trampoline.S
 struct spinlock wait_lock;
 
 // Reserve one process slot in a container.
-// Return 0 on success, -1 if the quota is exceeded.
+// Return 0 on success, -1 if the quota or namespace is unavailable.
 static int
 container_reserve(struct container *c)
 {
@@ -39,7 +39,8 @@ container_reserve(struct container *c)
 
   acquire(&c->lock);
 
-  if (!c->active || (c->max_proc > 0 && c->proc_count >= c->max_proc)) {
+  if (!c->active || (c->id != 0 && c->next_virtual_pid == 0) ||
+      (c->max_proc > 0 && c->proc_count >= c->max_proc)) {
     release(&c->lock);
     return -1;
   }
@@ -65,6 +66,31 @@ container_release(struct container *c)
   c->proc_count--;
 
   release(&c->lock);
+}
+
+// Allocate a PID within a non-host container. Zero indicates exhaustion or a
+// closed namespace. Virtual PIDs are not reused during a container lifetime.
+static int
+container_allocate_virtual_pid(struct container *c)
+{
+  int pid;
+
+  if (c == 0 || c->id == 0)
+    return -1;
+
+  acquire(&c->lock);
+  if (!c->active || c->next_virtual_pid == 0) {
+    release(&c->lock);
+    return -1;
+  }
+
+  pid = c->next_virtual_pid;
+  if (pid == 0x7fffffff)
+    c->next_virtual_pid = 0;
+  else
+    c->next_virtual_pid++;
+  release(&c->lock);
+  return pid;
 }
 
 // Reserve user pages against a container's configured limit.
@@ -134,6 +160,7 @@ procinit(void)
     containers[i].max_proc = 0;
     containers[i].active = 0;
     containers[i].root = 0;
+    containers[i].next_virtual_pid = 1;
     containers[i].cpu_period_ticks = CPU_DEFAULT_PERIOD;
     containers[i].cpu_quota_ticks = 0;
     containers[i].cpu_used_ticks = 0;
@@ -229,6 +256,7 @@ allocproc(void)
 
 found:
   p->pid = allocpid();
+  p->virtual_pid = 0;
   p->state = USED;
   p->container = 0; //reset
   p->root = 0;
@@ -276,6 +304,7 @@ freeproc(struct proc *p)
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
+  p->virtual_pid = 0;
   p->name[0] = 0;
   p->chan = 0;
   p->killed = 0;
@@ -341,6 +370,7 @@ userinit(void)
     panic("userinit container");
 
   p->container = &containers[0];
+  p->virtual_pid = p->pid;
 
   p->cwd = namei("/");
 
@@ -384,7 +414,7 @@ growproc(int n)
 int
 kfork(void)
 {
-  int i, pid;
+  int i, pid, virtual_pid;
   struct proc *np;
   struct proc *p = myproc();
 
@@ -413,6 +443,18 @@ kfork(void)
   }
   np->sz = p->sz;
 
+  if (np->container->id == 0) {
+    virtual_pid = np->pid;
+  } else {
+    virtual_pid = container_allocate_virtual_pid(np->container);
+    if (virtual_pid < 0) {
+      freeproc(np);
+      release(&np->lock);
+      return -1;
+    }
+  }
+  np->virtual_pid = virtual_pid;
+
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
 
@@ -430,7 +472,7 @@ kfork(void)
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
-  pid = np->pid;
+  pid = np->virtual_pid;
 
   release(&np->lock);
 
@@ -858,7 +900,8 @@ procdump(void)
     if (p->container != 0)
       container_id = p->container->id;
 
-    printk("%d %s %s container=%d\n", p->pid, state, p->name, container_id);
+    printk("global=%d virtual=%d %s %s container=%d\n", p->pid, p->virtual_pid,
+           state, p->name, container_id);
   }
 }
 
@@ -885,6 +928,7 @@ kcontainer_create(int max_proc)
       containers[i].max_proc = max_proc;
       containers[i].active = 1;
       containers[i].root = 0;
+      containers[i].next_virtual_pid = 1;
       containers[i].cpu_period_ticks = CPU_DEFAULT_PERIOD;
       containers[i].cpu_quota_ticks = 0;
       containers[i].cpu_used_ticks = 0;
@@ -995,10 +1039,12 @@ int
 kcontainer_enter(int id)
 {
   struct proc *p;
+  struct proc *child;
   struct container *old;
   struct container *new;
   struct inode *root;
   struct inode *oldroot, *oldcwd;
+  int virtual_pid;
 
   if (!container_is_host())
     return -1;
@@ -1018,21 +1064,37 @@ kcontainer_enter(int id)
   if (old == new)
     return 0;
 
-  // A process may enter only after the root is configured. Check the root
-  // and reserve a process slot atomically so setroot cannot race with entry.
+  // Moving a process with existing children would split their PID namespace
+  // and make the children's IDs ambiguous to wait().
+  acquire(&wait_lock);
+  for (child = proc; child < &proc[NPROC]; child++) {
+    if (child->parent == p) {
+      release(&wait_lock);
+      return -1;
+    }
+  }
+  release(&wait_lock);
+
+  // Check the root and reserve a process slot/PID atomically.
   acquire(&new->lock);
-  if (!new->active || new->root == 0 ||
+  if (!new->active || new->root == 0 || new->next_virtual_pid == 0 ||
       (new->max_proc > 0 && new->proc_count >= new->max_proc)) {
     release(&new->lock);
     return -1;
   }
   root = new->root;
+  virtual_pid = new->next_virtual_pid;
+  if (virtual_pid == 0x7fffffff)
+    new->next_virtual_pid = 0;
+  else
+    new->next_virtual_pid++;
   new->proc_count++;
   release(&new->lock);
 
   // Switch container.
   acquire(&p->lock);
   p->container = new;
+  p->virtual_pid = virtual_pid;
   release(&p->lock);
 
   // Release quota in the old container.

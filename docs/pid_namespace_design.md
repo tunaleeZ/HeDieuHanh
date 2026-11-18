@@ -161,3 +161,19 @@ full PID-related call paths.
 Conclusion:
 PID namespace is a future implementation task.
 This document records the proposed design only.
+
+## 11. SCRUM96 implementation decisions
+
+Các quyết định dưới đây được duyệt trước khi triển khai SCRUM96:
+
+- `proc.pid` tiếp tục là global PID duy nhất, dùng cho quản lý nội bộ và debug kernel.
+- Host namespace (container 0) giữ PID nhìn thấy bằng global PID để tương thích hành vi hiện tại.
+- Process host đầu tiên gọi `cont_enter()` vào một container root đã cấu hình trở thành namespace-init với virtual PID 1. `cont_enter()` bị từ chối nếu process còn child, tránh quan hệ parent-child bị chia giữa hai namespace.
+- `fork()` trong container cấp virtual PID mới; `fork()` ở host tiếp tục trả global PID. `wait()` trong cùng namespace trả virtual PID. Host parent đang chờ process đã chuyển namespace nhận global PID của process đó.
+- `kill()` trong container chỉ tra process thuộc cùng container bằng virtual PID. Host giữ quyền quản lý hiện tại bằng global PID.
+- Virtual PID tăng đơn điệu, không tái sử dụng trong vòng đời container. `next_virtual_pid == 0` biểu thị bộ cấp phát đã đóng hoặc cạn; PID dương lớn nhất được phép là `0x7fffffff`.
+- Khi namespace-init thoát, namespace bị đóng, các thành viên còn lại bị đánh dấu killed, và orphan được chuyển cho global init để reap. Không cho fork/entry mới và không tái sử dụng container; repo hiện chưa có `cont_destroy()`.
+- Orphan trong namespace còn PID 1 được chuyển cho namespace-init. Process cha ở namespace khác chỉ có thể là host parent của process đã `cont_enter()`; host `wait()` nhận global PID.
+- Cấp phát virtual PID được tuần tự hóa bằng `container.lock`. Lookup process giữ `p->lock` khi so sánh PID/container và thay đổi trạng thái. Khi cần nhiều lock, giữ thứ tự `wait_lock -> p->lock -> container->lock`; không giữ container lock qua thao tác có thể sleep.
+
+SCRUM96 gộp phần cấp phát entry/fork tối thiểu vào sub-task 2.1 để kiểm tra được tính duy nhất virtual PID trước khi commit. Sub-task 2.2 tập trung vào lookup và dịch PID; sub-task 2.3 tích hợp các syscall.

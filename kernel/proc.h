@@ -89,6 +89,7 @@ struct container {
   int max_proc;            // Maximum number of processes (0 = unlimited)
   int active;              // Whether this container is active
   struct inode *root;      // 0 = no root set
+  int next_virtual_pid;    // Next PID in namespace; 0 means closed/exhausted.
   uint64 cpu_period_ticks; // default 20
   uint64 cpu_quota_ticks;  // 0 = unlimited
   uint64 cpu_used_ticks;
@@ -120,7 +121,8 @@ struct proc {
   void *chan;           // If non-zero, sleeping on chan
   int killed;           // If non-zero, have been killed
   int xstate;           // Exit status to be returned to parent's wait
-  int pid;              // Process ID
+  int pid;              // Global process ID
+  int virtual_pid;      // PID visible within the process's container
 
   // wait_lock must be held when using this:
   struct proc *parent; // Parent process
