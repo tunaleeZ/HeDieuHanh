@@ -42,6 +42,13 @@ main(void)
     exit(1);
   }
 
+  result = cont_info(id, &before);
+  check("new container info is available", result == 0);
+  check("host cannot enter a container without a root", cont_enter(id) < 0);
+  result = cont_info(id, &after);
+  check("rejected rootless entry does not reserve a process slot",
+        result == 0 && after.proc_count == before.proc_count);
+  check("host container root cannot be configured", cont_setroot(0, "/") < 0);
   check("host can configure a root before entry", cont_setroot(id, "/") == 0);
   check("host can enter the new container", cont_enter(id) == 0);
 

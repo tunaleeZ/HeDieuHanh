@@ -1,0 +1,100 @@
+SCRUM92 sub-task 1.3 — F1 enforcement tests
+Date: 2026-11-18 (Asia/Bangkok)
+
+Build command:
+  make clean && make && make fs.img
+Result: completed successfully (exit status 0).
+
+Runtime command:
+  make qemu
+Commands typed individually at the xv6 shell after a fresh boot:
+  setupc1
+  roottest
+  ptest_neg
+
+Captured QEMU output:
+
+$ setupc1
+PASS: /c1 root fixture ready
+$ roottest
+=== ROOT DIRECTORY TEST ===
+PASS: open outside file before chroot
+PASS: set container root
+PASS: container root can only be set once
+PASS: open /test.txt
+PASS: blocked /outside.txt
+PASS: blocked ../outside.txt
+PASS: blocked outside.txt
+PASS: chdir .. stays at container root
+PASS: open test.txt
+PASS: container child entered with isolated paths
+PASS: container info shows entered child is active
+PASS: setroot rejects configured root while child is active
+PASS: container child rejects host paths and resets cwd
+PASS: host can still open /outside.txt
+PASS: chroot /c1
+PASS: chdir /
+PASS: pre-opened fd remains usable after chroot
+PASS: open /test.txt
+PASS: open test.txt
+PASS: open /../test.txt
+PASS: open /../../test.txt
+PASS: blocked /outside.txt
+PASS: blocked /../outside.txt
+PASS: blocked /../../outside.txt
+PASS: create file inside root
+PASS: unlink file inside root
+PASS: link file inside root
+PASS: open /linked.txt
+PASS: unlink linked file inside root
+PASS: link with parent traversal stays in root
+PASS: open /bounded_link.txt
+PASS: unlink bounded link
+PASS: unlink outside file remains blocked
+PASS: mkdir final dotdot rejected
+PASS: create directory for final dotdot test
+PASS: unlink final dotdot rejected
+PASS: remove test directory
+PASS: forked child retains root boundary
+PASS: chdir .. at root
+PASS: open test.txt
+INSIDE_EXEC_OK
+PASS: exec inside root
+PASS: blocked exec outside root
+PASS: exec outside root blocked
+PASS: open /test.txt
+PASS: blocked /outside.txt
+PASS: cont_enter applies container root
+=== ROOT TEST FINISHED: 0 failures ===
+$ ptest_neg
+=== CONTAINER PERMISSION TEST ===
+PASS: host chroot rejects regular file
+PASS: host chroot rejects missing path
+PASS: cont_info rejects negative id
+PASS: cont_info rejects out-of-range id
+PASS: host cont_info works
+PASS: host may enter the current host container
+PASS: same-container enter does not change process count
+PASS: host can create a container
+PASS: new container info is available
+PASS: host cannot enter a container without a root
+PASS: rejected rootless entry does not reserve a process slot
+PASS: host container root cannot be configured
+PASS: host can configure a root before entry
+PASS: host can enter the new container
+PASS: container cannot create a container
+PASS: container cannot enter host
+PASS: container cannot enter another container
+PASS: container cannot chroot
+PASS: container cannot set a root
+PASS: container cannot set CPU quota
+PASS: container cannot set memory quota
+PASS: cont_info remains available inside container
+PASS: cont_info for host remains available inside container
+=== PERMISSION TEST FINISHED: 0 failures ===
+$
+
+Ghi chú kiểm chứng:
+- `ptest_neg` gọi cont_info trước/sau lần cont_enter root-unset và so sánh proc_count.
+- `roottest` dùng container root `/c1`; child đặt cwd host là `/` trước cont_enter. Trong container, `/outside.txt`, `../outside.txt` và relative `outside.txt` đều bị chặn; `/test.txt` và cwd mới hoạt động. Host vẫn mở được `/outside.txt`.
+- Ca gọi cont_setroot khi child đang ở container xác nhận proc_count > 0 và lời gọi bị từ chối. Root đã được cấu hình trước khi vào theo chính sách A, vì vậy runtime không thể cô lập riêng lý do proc_count khỏi điều kiện root chỉ đặt một lần; kiểm tra riêng nhánh proc_count dựa thêm trên code `kcontainer_setroot()`.

@@ -190,6 +190,87 @@ test_fork_inherits_root(void)
   test_result("forked child retains root boundary", status == 0);
 }
 
+void
+test_container_entry_boundary(int container_id)
+{
+  int ready[2], release[2];
+  int pid, status, fd, n, child_failures;
+  char token;
+  struct container_info info;
+
+  if (pipe(ready) < 0) {
+    test_result("create container entry synchronization pipes", 0);
+    return;
+  }
+  if (pipe(release) < 0) {
+    close(ready[0]);
+    close(ready[1]);
+    test_result("create container entry synchronization pipes", 0);
+    return;
+  }
+
+  pid = fork();
+  if (pid < 0) {
+    test_result("fork container entry boundary child", 0);
+    close(ready[0]);
+    close(ready[1]);
+    close(release[0]);
+    close(release[1]);
+    return;
+  }
+
+  if (pid == 0) {
+    close(ready[0]);
+    close(release[1]);
+    child_failures = failures;
+
+    // Set cwd to the host root so a relative lookup proves cont_enter resets
+    // cwd to the configured container root.
+    if (chdir("/") < 0 || cont_enter(container_id) < 0)
+      exit(1);
+
+    test_open("/test.txt", 1);
+    test_open("/outside.txt", 0);
+    test_open("../outside.txt", 0);
+    test_open("outside.txt", 0);
+    test_result("chdir .. stays at container root", chdir("..") == 0);
+    test_open("test.txt", 1);
+
+    if (write(ready[1], "R", 1) != 1 || read(release[0], &token, 1) != 1)
+      exit(1);
+    close(ready[1]);
+    close(release[0]);
+    exit(failures == child_failures ? 0 : 1);
+  }
+
+  close(ready[1]);
+  close(release[0]);
+  n = read(ready[0], &token, 1);
+  test_result("container child entered with isolated paths", n == 1);
+
+  if (n == 1 && cont_info(container_id, &info) == 0) {
+    test_result("container info shows entered child is active",
+                info.proc_count > 0);
+    test_result("setroot rejects configured root while child is active",
+                cont_setroot(container_id, "/") < 0);
+  } else {
+    test_result("container info shows entered child is active", 0);
+    test_result("setroot rejects configured root while child is active", 0);
+  }
+
+  write(release[1], "X", 1);
+  close(ready[0]);
+  close(release[1]);
+  if (wait(&status) < 0)
+    status = -1;
+  test_result("container child rejects host paths and resets cwd", status == 0);
+
+  fd = open("/outside.txt", O_RDONLY);
+  test_result("host can still open /outside.txt", fd >= 0);
+  if (fd >= 0)
+    close(fd);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -213,6 +294,9 @@ main(int argc, char *argv[])
   } else {
     test_result("create root test container", 0);
   }
+
+  if (root_ready)
+    test_container_entry_boundary(container_id);
 
   // Change process root to /c1.
   if (chroot("/c1") < 0) {

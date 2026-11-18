@@ -6,11 +6,11 @@ Khắc phục F1: không cho tiến trình vào container chưa cấu hình root
 
 | Acceptance Criteria | Bằng chứng cần có | Trạng thái hiện tại |
 |---|---|---|
-| `cont_enter()` không cho truy cập host filesystem trái chính sách cô lập | Test âm tính root-unset và root `/c1` | Chưa triển khai |
-| Container chưa cấu hình root được xử lý an toàn | `cont_enter()` trả `-1`, `proc_count` không đổi | Chưa triển khai |
-| `roottest` và `ptest_neg` PASS | Log hồi quy cuối | Chưa chạy sau sửa |
-| Không regression fork, exec, chdir | `forktest`, `roottest`, `chroottest /c1` | Chưa chạy sau sửa |
-| Có commit, test log và handoff trên GitHub | Các commit sub-task và log; push do người dùng thực hiện | Đang làm |
+| `cont_enter()` không cho truy cập host filesystem trái chính sách cô lập | Test âm tính root-unset và root `/c1` | Đạt; chờ regression cuối |
+| Container chưa cấu hình root được xử lý an toàn | `cont_enter()` trả `-1`, `proc_count` không đổi | Đạt; kiểm tra trong `ptest_neg` |
+| `roottest` và `ptest_neg` PASS | `docs/test_evidence/T13_f1_enforcement.txt` | Đạt |
+| Không regression fork, exec, chdir | `forktest`, `roottest`, `chroottest /c1` ở 1.2; regression cuối còn chờ | Đạt có lưu ý; cần lặp ở 1.4 |
+| Có commit, test log và handoff trên GitHub | Commit local và log; push do người dùng thực hiện | Đang làm; chưa push |
 
 ## Trạng thái sub-task
 
@@ -18,7 +18,7 @@ Khắc phục F1: không cho tiến trình vào container chưa cấu hình root
 |---|---|---|---|
 | 1.1 Survey root-unset bug | Hoàn tất | `acb5e50` | Khảo sát code và tái hiện runtime F1; chính sách A và gộp F10 đã được duyệt. |
 | 1.2 Implement fix | Hoàn tất | Điền khi cập nhật sub-task 1.3 | Kernel từ chối root-unset và F10; test cũ đặt `/` rõ ràng. Build sạch và regression mục tiêu PASS. |
-| 1.3 Add negative tests | Chưa làm | — | Kiểm tra root-unset, proc_count, F10 và ranh giới root `/c1`; lưu log T13. |
+| 1.3 Add negative tests | Hoàn tất | Điền khi cập nhật sub-task 1.4 | `roottest` và `ptest_neg` PASS; log T13 đã lưu. |
 | 1.4 Run regression and handoff | Chưa làm | — | Build sạch, regression, cập nhật ma trận và defect, đối chiếu log tuần 3. |
 
 ## 1.1 — Khảo sát
@@ -109,6 +109,16 @@ fork test OK
 ```
 
 `roottest` cũng in PASS cho root boundary, `..`, fork child root, `chdir ..` ở root, exec trong root và từ chối exec ngoài root; toàn bộ kết thúc 0 failures. `ctest` xác nhận process quota 3, từ chối fork khi đủ quota, thu hồi slot sau wait và fork thành công lại. `ptest_neg` xác nhận host-only administration và chuyển container một chiều. Đây là output thật từ QEMU; build không lưu log riêng trong sub-task 1.2.
+
+### 1.3 — Negative tests
+
+`user/ptest_neg.c` xác nhận entry vào container chưa có root trả `-1` và `proc_count` không đổi; xác nhận `cont_setroot(0, "/")` thất bại với path hợp lệ; sau đó đặt `/` cho ca kiểm tra quyền quản trị.
+
+`user/roottest.c` thêm child bắt đầu với cwd host `/`, vào container có root `/c1`, rồi kiểm tra mở được `/test.txt`, bị chặn `/outside.txt`, `../outside.txt` và relative `outside.txt`, `chdir("..")` ở root vẫn nằm trong root, và host cha vẫn mở được `/outside.txt`. Parent đồng bộ khi child đang ở trong container, xác nhận `proc_count > 0` và gọi `cont_setroot()` với ID/path hợp lệ để kiểm tra setter từ chối khi process đang chạy.
+
+Lệnh, fixture và output QEMU đầy đủ: [`docs/test_evidence/T13_f1_enforcement.txt`](../test_evidence/T13_f1_enforcement.txt). Build sạch, `setupc1`, `roottest` và `ptest_neg` đều hoàn tất; hai test kết thúc 0 failures.
+
+Giới hạn kiểm thử: theo phương án A, không thể có process hợp lệ trong container khi root còn unset; sau khi đặt root, quy tắc “chỉ đặt một lần” cũng làm `cont_setroot` thất bại. Vì vậy test runtime xác nhận lời gọi thất bại khi `proc_count > 0`, nhưng không thể phân biệt điều kiện `proc_count > 0` với điều kiện root đã được đặt. `kcontainer_setroot()` có kiểm tra cả hai điều kiện; riêng proc_count được xác minh thêm bằng code review.
 
 ## Phát hiện và rủi ro
 
