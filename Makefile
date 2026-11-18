@@ -157,6 +157,7 @@ UPROGS=\
 	$U/_sync\
 	$U/_hello\
 	$U/_ctest\
+	$U/_pidns_test\
 	$U/_chroottest\
 	$U/_roottest\
 	$U/_outsideexec\

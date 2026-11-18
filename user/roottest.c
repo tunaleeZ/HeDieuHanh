@@ -353,7 +353,12 @@ main(int argc, char *argv[])
   test_exec_outside_probe();
 
   // Enter only after all host-only setup and per-process root checks.
-  if (root_ready && cont_enter(container_id) == 0) {
+  // The earlier boundary test entered and exited the original container's
+  // namespace-init, which permanently closes that PID namespace. Use a new
+  // container for this independent root-entry check.
+  container_id = cont_create(8);
+  if (container_id >= 0 && cont_setroot(container_id, "/") == 0 &&
+      cont_enter(container_id) == 0) {
     test_open("/test.txt", 1);
     test_open("/outside.txt", 0);
     test_result("cont_enter applies container root", 1);

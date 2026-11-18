@@ -8,15 +8,15 @@ Triển khai PID namespace theo thiết kế SCRUM-90, giữ global PID cho kern
 
 | Tiêu chí | Bằng chứng | Trạng thái |
 |---|---|---|
-| Hai container độc lập nhìn thấy PID 1 | T03-02 | Chưa chạy |
-| Global PID duy nhất và dùng nội bộ | T03-01, procdump/debug | Chưa xác minh đầy đủ |
-| `getpid()` trả virtual PID | T03-04 | Chưa triển khai |
-| `wait()` trả PID theo namespace của parent | T03-05 | Chưa triển khai |
-| `kill()` chỉ điều khiển đúng namespace | T03-06/T03-08 | Chưa triển khai |
-| Namespace-init exit đúng chính sách | T03-07 | Chưa triển khai |
-| Lock/process lifecycle an toàn | Regression và review race | Chưa xác minh đầy đủ |
-| `forktest`, `ctest`, `usertests -q` không regression | Log regression | Chưa chạy trên kernel cuối |
-| Có T03, tài liệu, log và handoff | T03 và các evidence | Đang làm |
+| Hai container độc lập nhìn thấy PID 1 | T03-02 | PASS |
+| Global PID duy nhất và dùng nội bộ | T03-01; host-visible fork IDs khác nhau | PASS |
+| `getpid()` trả virtual PID | T03-04; host và hai container | PASS |
+| `wait()` trả PID theo namespace của parent | T03-05; nhận vpid 2 | PASS |
+| `kill()` chỉ điều khiển đúng namespace | T03-06/T03-08; PID không tồn tại bị từ chối | PASS |
+| Namespace-init exit đúng chính sách | T03-07; đóng namespace và reap members | PASS |
+| Lock/process lifecycle an toàn | Lock-order review và QEMU 3-hart regression | PASS; chưa có stress race chuyên dụng |
+| `forktest`, `ctest`, `usertests -q` không regression | `PID_namespace_regression.txt` | PASS |
+| Có T03, tài liệu, log và handoff | T03 và các evidence | PASS |
 
 ## Trạng thái sub-task
 
@@ -24,8 +24,8 @@ Triển khai PID namespace theo thiết kế SCRUM-90, giữ global PID cho kern
 |---|---|---|---|
 | 2.1 Implement virtual PID data structures | Hoàn tất | `f3beffb` | Cấu trúc và allocator entry/fork; ctest cho thấy vpid 1,2,3; build/forktest PASS. |
 | 2.2 Implement PID allocation and translation | Hoàn tất | `ec20c0d` | Helpers tra visible PID và dịch virtual PID; build, ctest, forktest PASS. |
-| 2.3 Update process syscalls | Hoàn tất | `feat: Update process syscalls` | getpid/wait/kill dùng vpid; entry publication atomic với PID reserve; namespace-init exit; build, ctest, forktest PASS. |
-| 2.4 Test T03 and regression | Chưa làm | — | Tạo T03, chạy clean build và regression, lưu log. |
+| 2.3 Update process syscalls | Hoàn tất | `62bd5df` | getpid/wait/kill dùng vpid; entry publication atomic với PID reserve; namespace-init exit; build, ctest, forktest PASS. |
+| 2.4 Test T03 and regression | Hoàn tất | `test: Test PID namespace and regression` | T03 0 failures; regression yêu cầu PASS; evidence lưu trong `docs/test_evidence/`. Hash lấy từ `git log` sau commit. |
 
 ## Thiết kế đã thống nhất
 
@@ -33,7 +33,7 @@ Triển khai PID namespace theo thiết kế SCRUM-90, giữ global PID cho kern
 - `p->virtual_pid` là PID nhìn thấy trong container. Host container 0 dùng `virtual_pid == pid` để giữ tương thích.
 - `container.next_virtual_pid` cấp số tăng đơn điệu cho namespace khác 0, khởi đầu bằng 1. Process đầu tiên vào container nhận PID 1; fork cấp ID mới. Không tái sử dụng PID đã cấp.
 - Giá trị `next_virtual_pid == 0` biểu thị namespace đóng hoặc cạn PID. Giới hạn PID dương là `0x7fffffff`; khi cấp PID đó, allocator đóng.
-- `cont_enter()` bị từ chối nếu caller có child hiện hữu. Quan hệ parent của process nhập container vẫn giữ nguyên; host parent reap process đó bằng global PID.
+- `cont_enter()` bị từ chối nếu caller có child hiện hữu. Quan hệ parent của process nhập container vẫn giữ nguyên; host parent reap process đó bằng global PID. Regression `roottest` dùng container mới cho lần entry độc lập sau khi PID 1 cũ đã đóng namespace.
 - Khi namespace-init thoát, đóng allocator, đánh dấu các thành viên khác killed, chuyển orphan sang global init để reap. Process còn lại không chạy thành namespace không có PID 1; fork/entry mới bị từ chối. Container không tái sử dụng vì không có `cont_destroy()`.
 - `kill()` của process container chỉ tra cùng container; host tiếp tục nhận global PID và có chính sách quản lý toàn hệ thống hiện tại.
 - `wait()` cùng namespace trả virtual PID; host parent nhận global PID cho child đã chuyển namespace.
@@ -94,10 +94,31 @@ Khi process PID 1 trong container thoát, `kexit()` đóng allocator dưới con
 - Việc `cont_enter()` từ chối process có child là hạn chế hành vi mới, được chọn để tránh quan hệ cha-con cắt qua namespace.
 - `usertests -q` có nhiều tình huống PID/wait/kill ở host; host virtual PID bằng global PID nhằm giữ tương thích.
 
-## Bước tiếp theo
+## 2.4 — T03 và regression
 
-Hoàn tất test cấu trúc/allocator trong 2.1 và commit riêng. Sau đó 2.2 triển khai namespace-aware lookup/translation; 2.3 cập nhật syscalls và xử lý namespace-init đầy đủ; 2.4 tạo T03 và chạy regression cuối.
+Test mới `user/pidns_test.c` được thêm vào `UPROGS` dưới tên `pidns_test`. Test kiểm tra PID host, hai namespace độc lập có leader PID 1, ba virtual PID con riêng biệt trong mỗi namespace, `getpid/fork/wait`, kill isolation giữa hai worker có cùng PID 2, PID không tồn tại và namespace-init exit/reap. T03 kết thúc `0 failure(s)`.
+
+Các file được thay đổi trong SCRUM96:
+
+| Phạm vi | File |
+|---|---|
+| PID data, allocator và lifecycle | `kernel/proc.h`, `kernel/proc.c`, `kernel/defs.h`, `kernel/sysproc.c` |
+| Test | `user/pidns_test.c`, `user/roottest.c`, `Makefile` |
+| Thiết kế và handoff | `docs/pid_namespace_design.md`, `docs/week4_handoff_files/Scrum96_handoff.md` |
+| Matrix và evidence | `docs/integration_test_matrix.md`, `docs/test_evidence/T03_pid_namespace.txt`, `docs/test_evidence/PID_namespace_regression.txt` |
+
+Build sạch `make clean && make && make fs.img` thành công (linker cảnh báo LOAD segment RWX như trước). Regression trên QEMU 3 harts: `forktest`, `ctest`, `usertests -q`, `roottest`, `chroottest /c1`, `ptest_neg`, `cputest`, `test_sysinfo` đều PASS. `roottest` cần fixture `/c1` (`setupc1`) và dùng container mới ở lần entry cuối vì namespace đầu tiên đã đóng sau khi PID 1 thoát. Evidence: `docs/test_evidence/T03_pid_namespace.txt`, `docs/test_evidence/PID_namespace_regression.txt`; ctest 0 failures, usertests `ALL TESTS PASSED`, roottest 0 failures, ptest_neg 0 failures, cputest PASS.
+
+### Giới hạn còn lại
+
+- Chưa chạy stress test chuyên biệt cho nhiều parent đồng thời gọi fork trong cùng namespace; allocator được bảo vệ bằng container lock, và QEMU regression chạy 3 harts.
+- Container slot không tái sử dụng sau namespace-init exit do không có destroy API.
+- Integration matrix còn các mục khác ngoài SCRUM96 như memory quota, bounded fork stress, multi-container quota và cleanup/reuse.
+
+## Tổng kết và bước tiếp theo
+
+SCRUM96 đã hoàn thành bốn sub-task và có bốn commit riêng. Không push; branch `main` sẵn sàng để người dùng tự push và cập nhật Jira. Các giới hạn còn lại được liệt kê ở trên và trong integration matrix.
 
 ## Lưu ý khi tiếp tục
 
-Đọc handoff này và `docs/pid_namespace_design.md`; kiểm tra status, log và branch trước khi tiếp tục. Không push; task yêu cầu người dùng tự push và cập nhật Jira.
+Đọc handoff này và `docs/pid_namespace_design.md`; kiểm tra status, log và branch trước khi tiếp tục. Bốn commit SCRUM96: `f3beffb`, `ec20c0d`, `62bd5df`, và commit test/handoff sub-task 2.4. Không push; task yêu cầu người dùng tự push và cập nhật Jira.

@@ -1,0 +1,29 @@
+SCRUM96 T03 PID namespace test evidence
+Date: 2026-11-18 (Asia/Bangkok)
+Environment: xv6-riscv, QEMU virt, 128 MiB RAM, 3 harts
+Build: clean `make clean && make && make fs.img` completed successfully. The final race-fixed kernel and `pidns_test` were rebuilt and tested.
+Command: `pidns_test` from the xv6 shell. Transcript captured from QEMU with `script`.
+Result: PASS; T03 reports 0 failures. Two container leaders each verify getpid() == 1; same-namespace workers verify PID 2; each manager allocates and reaps three unique additional virtual PIDs. Namespace A kills its own PID 2 while namespace B's PID 2 is held alive; B subsequently kills/reaps its own PID 2. Invalid PID lookup is rejected. Namespace-init exit results in all members being reaped.
+
+--- Actual QEMU transcript ---
+Script started on 2026-11-18 11:23:35+07:00 [COMMAND="make qemu" <not executed on terminal>]
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 1 starting
+hart 2 starting
+init: starting sh
+$ pidns_test
+=== T03 PID namespace ===
+T03-04 host getpid: PASS
+T03-01 distinct host-visible leader PIDs: PASS
+T03-02 two independent namespace PID 1s: PASS
+T03-03/04 allocation/getpid: leaders PID 1, workers PID 2, three unique children each
+T03-05/06 namespace A kill and wait: PASS
+T03-06/08 namespace B isolation and kill: PASS
+T03-07 namespace-init exit/reap: PASS
+=== T03 result: 0 failure(s) ===
+$ QEMU: Terminated
+
+Script done on 2026-11-18 11:23:43+07:00 [COMMAND_EXIT_CODE="0"]

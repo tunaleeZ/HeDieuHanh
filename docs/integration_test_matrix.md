@@ -16,7 +16,7 @@ Status definitions:
 |---|---|---|---|
 | T01 | Basic boot | PASS | scrum89_clean_build.log; clean build and boot |
 | T02 | User programs | PASS | scrum89_clean_build.log; ls, forktest, ctest |
-| T03 | Independent PID namespace | BLOCKED | SCRUM-90 design only; PID namespace not implemented |
+| T03 | Independent PID namespace | PASS | `docs/test_evidence/T03_pid_namespace.txt`; two namespace PID 1s, vpid allocation/getpid/wait/kill isolation and init exit/reap |
 | T04 | Process limit | PASS | scrum89_clean_build.log; ctest max_proc=3, overflow rejected; plan suggests 4 |
 | T05 | Process quota release | PASS | scrum89_clean_build.log; wait and fork again succeeded |
 | T06 | Fork bomb containment | NOT RUN | Bounded recursive fork stress and host-shell responsiveness not verified together |
@@ -48,11 +48,10 @@ Status definitions:
 ## Outstanding work
 
 1. Run bounded recursive fork stress for T06.
-2. Implement and verify PID namespace for T03.
-3. Implement memory quota enforcement and recovery for T07-T09.
-4. Run comprehensive multi-hart concurrency tests for T12.
-5. Run simultaneous-container isolation tests for T14.
-6. Implement container cleanup/reuse for T15.
+2. Implement memory quota enforcement and recovery for T07-T09.
+3. Run comprehensive multi-hart concurrency tests for T12.
+4. Run simultaneous-container isolation tests for T14.
+5. Implement container cleanup/reuse for T15.
 
 ## Conclusion
 
