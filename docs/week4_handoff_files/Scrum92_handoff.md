@@ -17,9 +17,9 @@ Khắc phục F1: không cho tiến trình vào container chưa cấu hình root
 | Sub-task | Trạng thái | Commit hash | Ghi chú |
 |---|---|---|---|
 | 1.1 Survey root-unset bug | Hoàn tất | `acb5e50` | Khảo sát code và tái hiện runtime F1; chính sách A và gộp F10 đã được duyệt. |
-| 1.2 Implement fix | Hoàn tất | Điền khi cập nhật sub-task 1.3 | Kernel từ chối root-unset và F10; test cũ đặt `/` rõ ràng. Build sạch và regression mục tiêu PASS. |
-| 1.3 Add negative tests | Hoàn tất | Điền khi cập nhật sub-task 1.4 | `roottest` và `ptest_neg` PASS; log T13 đã lưu. |
-| 1.4 Run regression and handoff | Chưa làm | — | Build sạch, regression, cập nhật ma trận và defect, đối chiếu log tuần 3. |
+| 1.2 Implement fix | Hoàn tất | `64af7a0` | Kernel từ chối root-unset và F10; test cũ đặt `/` rõ ràng. Build sạch và regression mục tiêu PASS. |
+| 1.3 Add negative tests | Hoàn tất | `8f3a35f` | `roottest` và `ptest_neg` PASS; log T13 đã lưu. |
+| 1.4 Run regression and handoff | Hoàn tất | Commit tạo handoff này; hash được báo ở kết quả cuối | Build sạch, regression PASS, cập nhật ma trận/defect và đối chiếu log tuần 3. |
 
 ## 1.1 — Khảo sát
 
@@ -127,9 +127,32 @@ Giới hạn kiểm thử: theo phương án A, không thể có process hợp l
 - Chưa kiểm thử stress inode hoặc race đồng thời ngoài phân tích khóa; các sub-task sau tập trung kiểm tra hành vi và quota như acceptance criteria.
 - DEFECT-01 có thể ảnh hưởng nhập lệnh QEMU; chạy từng lệnh một và giữ output thật.
 
-## Bước tiếp theo
+## 1.4 — Regression cuối và kết luận
 
-1.2 sửa `kcontainer_enter()` và `kcontainer_setroot()`, đồng thời cập nhật các test cũ phụ thuộc hành vi vào container chưa có root. Sau đó build sạch và chạy bộ kiểm tra nêu trong prompt. Tiếp tục 1.3 thêm negative tests và lưu log thật; 1.4 chạy toàn bộ regression, đối chiếu log tuần 3, cập nhật ma trận/defect và handoff.
+Build cuối chạy `make clean && make && make fs.img` và thành công. Từ filesystem mới, một boot QEMU sạch chạy tuần tự: `setupc1`, `roottest`, `chroottest /c1`, `ptest_neg`, `ctest`, `cputest` hai lần, `test_sysinfo`, `forktest`, `usertests -q`. Transcript đầy đủ nằm ở [`docs/test_evidence/F1_regression.txt`](../test_evidence/F1_regression.txt). Mọi test PASS; `roottest` và `ptest_neg` báo 0 failures; cả hai lượt CPU quota test PASS với `zero_windows=0`; `forktest` in `fork test OK`; `usertests -q` in `ALL TESTS PASSED`.
+
+Đối chiếu `docs/test_evidence/final_regression_week3.txt` và `scrum88_full_regression.log`: các ca cũ roottest, ptest_neg, ctest, chroottest, test_sysinfo, forktest và usertests vẫn qua. Bổ sung mới ở lần này là kiểm tra từ chối root-unset và proc_count không đổi, F10, đường dẫn tuyệt đối/relative ngoài `/c1`, cwd reset khi vào container, cùng hai lượt cputest trong cùng boot. `usertests` tiếp tục in các thông báo `usertrap(): unexpected scause` trong ca địa chỉ không hợp lệ/lazy-memory và vẫn kết thúc PASS, giống ghi nhận tuần 3. DEFECT-01 không tái hiện; root cause chưa rõ.
+
+### Acceptance Criteria cuối
+
+| Tiêu chí | Bằng chứng | Trạng thái |
+|---|---|---|
+| `cont_enter()` không mở đường vào host filesystem trái chính sách | `T13_f1_enforcement.txt`, `F1_regression.txt`: root-unset bị từ chối; `/outside.txt`, `../outside.txt`, relative `outside.txt` bị chặn dưới `/c1`; host vẫn mở được file | Đạt |
+| Container chưa root được xử lý an toàn | `ptest_neg`: `cont_enter` trả lỗi; `proc_count` trước/sau không đổi | Đạt |
+| `roottest` và `ptest_neg` PASS | Log 1.3 và transcript regression cuối; 0 failures | Đạt |
+| Không regression fork, exec, chdir | `forktest` PASS; `roottest` exec trong/ngoài root và `chdir ..`; `chroottest /c1` PASS | Đạt |
+| Có commit, test log và handoff trên GitHub | 4 commit local, log và handoff đã có; không push theo yêu cầu | Một phần — cần người dùng push |
+
+### File thay đổi theo sub-task
+
+| Sub-task | File |
+|---|---|
+| 1.1 | `docs/filesystem_analysis.md`, `docs/week4_handoff_files/Scrum92_handoff.md` |
+| 1.2 | `kernel/proc.c`, `user/ctest.c`, `user/cputest.c`, `user/ptest_neg.c`, handoff |
+| 1.3 | `user/ptest_neg.c`, `user/roottest.c`, `docs/test_evidence/T13_f1_enforcement.txt`, handoff |
+| 1.4 | `docs/test_evidence/F1_regression.txt`, `docs/integration_test_matrix.md`, `docs/regression_defects.md`, handoff |
+
+Task hoàn tất trong repo local. Còn bước publish do người dùng thực hiện: push các commit và cập nhật Jira. Không có thay đổi ngoài phạm vi task được đưa vào commit.
 
 ## Lưu ý khi tiếp tục trong chat mới
 

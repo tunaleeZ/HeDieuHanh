@@ -80,3 +80,19 @@ Do not mark this defect as permanently resolved.
 ### Evidence
 
 docs/test_evidence/scrum88_full_regression.log
+
+## SCRUM92 — F1/F10 disposition and DEFECT-01 retest (2026-11-18)
+
+- F1 root-unset isolation: fixed in `kernel/proc.c`. `cont_enter()` now rejects
+  a target with no root before reserving a process slot; `ptest_neg` confirms
+  the return value and unchanged `proc_count`. `/c1` isolation, absolute and
+  relative outside-path denial, and cwd reset pass in `roottest`.
+- F10: policy now rejects `cont_setroot(0, "/")`; the valid-path negative case
+  passes in `ptest_neg`.
+- DEFECT-01 retest: `usertests -q` completed with `ALL TESTS PASSED`; shell
+  commands were run individually and neither `exec xv6 failed` nor
+  `exec init: failed` appeared in the captured transcript. The defect was not
+  reproduced; its root cause remains unconfirmed and status remains under
+  investigation.
+- Evidence: `docs/test_evidence/T13_f1_enforcement.txt` and
+  `docs/test_evidence/F1_regression.txt`.

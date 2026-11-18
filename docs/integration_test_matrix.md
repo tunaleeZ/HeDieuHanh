@@ -26,24 +26,24 @@ Status definitions:
 | T10 | CPU quota | PASS | T10_cpu_quota.txt; 3 runs PASS; approximate iterations-based result |
 | T11 | CPU quota refresh | PASS | T11_cpu_refresh.txt; 30 nonzero windows across 3 runs |
 | T12 | Multi-hart CPU safety | NOT RUN | QEMU 3 harts; no full concurrency/race safety test |
-| T13 | Root escape protection | PASS | T13_root_escape.txt; roottest 0 failures |
+| T13 | Root escape protection | PASS | T13_root_escape.txt; T13_f1_enforcement.txt and F1_regression.txt verify root-unset refusal, proc_count unchanged, `/c1` path boundaries and cwd reset; roottest 0 failures |
 | T14 | Multiple concurrent containers | NOT RUN | Different roots/quotas running concurrently not fully verified |
 | T15 | Container cleanup and reuse | BLOCKED | Container destroy/reuse lifecycle not implemented |
-| T16 | xv6 regression | PASS | scrum88_full_regression.log; usertests -q ALL TESTS PASSED |
+| T16 | xv6 regression | PASS | F1_regression.txt; usertests -q ALL TESTS PASSED; also scrum88_full_regression.log |
 
 ## Additional verification
 
 - ptest_neg: PASS
-  Evidence: T13_permission_negative.txt
+  Evidence: T13_permission_negative.txt; T13_f1_enforcement.txt; F1_regression.txt
 - chroottest /c1: PASS
-  Evidence: final_regression_week3.txt
+  Evidence: final_regression_week3.txt; F1_regression.txt
 - test_sysinfo: PASS
-  Evidence: final_regression_week3.txt
+  Evidence: final_regression_week3.txt; F1_regression.txt
 - CPU benchmark reruns:
   Evidence: benchmark_rerun_week3.md
 - DEFECT-01: Not reproduced in the latest usertests session.
   Root cause not confirmed.
-  Evidence: scrum88_full_regression.log
+  Evidence: scrum88_full_regression.log; F1_regression.txt
 
 ## Outstanding work
 
