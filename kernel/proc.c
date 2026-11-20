@@ -140,6 +140,26 @@ global_pid_from_visible(struct proc *viewer, int virtual_pid)
 }
 
 // Reserve user pages against a container's configured limit.
+//int
+//container_reserve_pages(struct container *c, int n)
+//{
+ // if (c == 0 || n < 0)
+  //  return -1;
+
+//  acquire(&c->lock);
+//  if (!c->active ||
+//      c->pages_used <0 ||
+//      n > 0x7fffffff - c->pages_used ||
+//      (c->max_pages > 0 && c->pages_used  > c->max_pages||
+//       n > c->max_pages - c->pages_used)) ) {
+//    release(&c->lock);
+//    return -1;
+//  }
+//  c->pages_used += n;
+//  release(&c->lock);
+//  return 0;
+//}
+
 int
 container_reserve_pages(struct container *c, int n)
 {
@@ -147,10 +167,17 @@ container_reserve_pages(struct container *c, int n)
     return -1;
 
   acquire(&c->lock);
-  if (!c->active || (c->max_pages > 0 && c->pages_used + n > c->max_pages)) {
+
+  if (!c->active ||
+      c->pages_used < 0 ||
+      n > 0x7fffffff - c->pages_used ||
+      (c->max_pages > 0 &&
+       (c->pages_used > c->max_pages ||
+        n > c->max_pages - c->pages_used))) {
     release(&c->lock);
     return -1;
   }
+
   c->pages_used += n;
   release(&c->lock);
   return 0;
