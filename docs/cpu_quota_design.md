@@ -157,3 +157,34 @@ CPU-09: chroot/path boundary khong regression.
 Thiet ke CPU quota da duoc chot; accounting va scheduler enforcement
 van chua duoc trien khai. Cac gia dinh va rui ro trong muc 6.1 can duoc
 ghi nhan khi chay cac ca CPU-01..CPU-09.
+
+## 11. Week 4 Implementation Update - SCRUM-95
+
+The original sections above describe the initial design.
+
+The current implementation uses runtime accounting
+instead of counting timer interrupts.
+
+Changes:
+
+- Runtime measured using r_time().
+- CPU usage accumulated around context switches.
+- Container membership transitions split runtime.
+- Runtime period refresh uses the same time base.
+- cont_info() exposes cpu_used_runtime.
+- Timer interrupts continue to provide preemption.
+- CPU quota remains soft on multi-hart systems.
+
+Lock order:
+
+    p->lock -> container->lock
+
+Container locks must not be held across swtch().
+
+Sub-tick accounting has been verified.
+Filesystem contention testing completed successfully.
+
+Multi-hart overshoot and sleeplock-holder throttling
+remain documented limitations.
+
+See docs/Scrum95_handoff.md for test results.

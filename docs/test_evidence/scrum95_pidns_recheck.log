@@ -1,0 +1,41 @@
+Script started on 2026-11-20 14:55:44+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 2 starting
+hart 1 starting
+init: starting sh
+$ pidns_test
+=== T03 PID namespace ===
+T03-04 host getpid: PASS
+T03-01 distinct host-visible leader PIDs: PASS
+T03-02 two independent namespace PID 1s: PASS
+T03-03/04 allocation/getpid: leaders PID 1, workers PID 2, three unique children each
+T03-05/06 namespace A kill and wait: PASS
+T03-06/08 namespace B isolation and kill: PASS
+T03-07 namespace-init exit/reap: PASS
+=== T03 result: 0 failure(s) ===
+$ echo HOST_OK
+HOST_OK
+$ grep -nE 'PASS|FAIL|panic|HOST_OK' \
+docs/test_evidence/scrum95_pidns_recheck.logexec FAIL failed
+exec panic failed
+exec HOST_OK' failed
+$ 
+exec docs/test_evidence/scrum95_pidns_recheck.log failed
+$ 
+$ grep -nE 'PASS|FAIL|panic|HOST_OK' \
+docs/test_evidence/scrum95_pidns_recheck.logexec FAIL failed
+exec panic failed
+exec HOST_OK' failed
+$ grep -nE 'PASS|FAIL|panic|HOST_OK' \
+docs/test_evidence/scrum95_pidns_recheck.logexec docs/test_evidence/scrum95_pidns_recheck.loggrep failed
+exec panic failed
+exec FAIL failed
+exec HOST_OK' failed
+$ x
+exec docs/test_evidence/scrum95_pidns_recheck.logx failed
+$ QEMU: Terminated
+
+Script done on 2026-11-20 14:56:44+07:00 [COMMAND_EXIT_CODE="0"]

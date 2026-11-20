@@ -1,0 +1,28 @@
+Script started on 2026-11-20 14:44:12+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+riscv64-unknown-elf-gcc -Wall -Werror -Wno-unknown-attributes -O -fno-omit-frame-pointer -ggdb -gdwarf-2 -ffile-prefix-map=/home/hoangphuc-20233583/lightweight-containers=. -march=rv64gc -std=gnu99 -MD -mcmodel=medany -ffreestanding -fno-common -nostdlib -fno-delete-null-pointer-checks -fno-builtin-strncpy -fno-builtin-strncmp -fno-builtin-strlen -fno-builtin-memset -fno-builtin-memmove -fno-builtin-memcmp -fno-builtin-log -fno-builtin-bzero -fno-builtin-strchr -fno-builtin-exit -fno-builtin-malloc -fno-builtin-putc -fno-builtin-free -fno-builtin-memcpy -Wno-main -fno-builtin-printf -fno-builtin-fprintf -fno-builtin-vprintf -I. -fno-stack-protector -fno-pie -no-pie   -c -o user/cpulocktest.o user/cpulocktest.c
+riscv64-unknown-elf-ld -z max-page-size=4096 -T user/user.ld -o user/_cpulocktest user/cpulocktest.o user/ulib.o user/usys.o user/printf.o user/umalloc.o
+riscv64-unknown-elf-objdump -S user/_cpulocktest > user/cpulocktest.asm
+riscv64-unknown-elf-objdump -t user/_cpulocktest | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$/d' > user/cpulocktest.sym
+mkfs/mkfs fs.img README user/_bench_proc user/_bench_mem user/_bench_cpu user/_copyfile user/_cat user/_echo user/_forktest user/_grep user/_init user/_kill user/_ln user/_ls user/_mkdir user/_rm user/_sh user/_stressfs user/_usertests user/_grind user/_wc user/_zombie user/_logstress user/_forphan user/_dorphan user/_sync user/_hello user/_memquotatest user/_ctest user/_pidns_test user/_chroottest user/_roottest user/_outsideexec user/_setupc1 user/_ptest_neg user/_cpulocktest user/_cpusafetytest user/_cputest user/_test_sysinfo
+nmeta 47 (boot, super, log blocks 31, inode blocks 13, bitmap blocks 1) blocks 1953 total 2000
+balloc: first 1692 blocks have been allocated
+balloc: write bitmap block at sector 46
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 2 starting
+hart 1 starting
+init: starting sh
+$ cpulocktest
+=== SCRUM-95 CPU LOCK TEST ===
+LOCK_RESULT: worker=B rounds=100 elapsed=25 ticks
+PASS: worker 5 completed
+LOCK_RESULT: worker=A rounds=100 elapsed=379 ticks
+PASS: worker 4 completed
+=== CPU LOCK TEST: 0 failures ===
+$ echo HOST_OK
+HOST_OK
+$ QEMU: Terminated
+
+Script done on 2026-11-20 14:45:36+07:00 [COMMAND_EXIT_CODE="0"]
