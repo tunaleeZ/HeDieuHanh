@@ -1,61 +1,161 @@
-# SCRUM-88 - Integration Test Matrix
+# SCRUM-97 – Bảng kiểm thử tích hợp tuần 4
 
-Project: Lightweight Containers on xv6-riscv
-Branch: main
-Environment: QEMU, 128 MiB, 3 harts
+## 1. Thông tin chung
 
-Test plan: docs/week1/test_plan_vi_khong_bang.md
+- Đề tài: Lightweight Containers trên xv6-riscv.
+- Nhánh phát triển: main.
+- Hệ điều hành phát triển: Ubuntu.
+- Môi trường kiểm thử: QEMU RISC-V.
+- Bộ nhớ RAM: 128 MiB.
+- Số hart: 3.
+- Kích thước trang bộ nhớ: 4096 byte.
+- Kích thước filesystem sau điều chỉnh: 4000 blocks.
 
-Status definitions:
-- PASS: Supported by actual test evidence in stated scope.
-- FAIL: Test ran and failed.
-- BLOCKED: Required feature is not implemented.
-- NOT RUN: Full test scenario has not been verified.
+## 2. Quy ước đánh giá
 
-| ID | Test case | Status | Evidence / Notes |
+- PASS: Đạt yêu cầu trong phạm vi đã kiểm thử.
+- PARTIAL PASS: Đạt một phần yêu cầu, còn hạn chế.
+- FAIL: Đã thực hiện kiểm thử nhưng không đạt.
+- BLOCKED: Chưa thể hoàn thành do thiếu chức năng.
+- NOT RUN: Chưa thực hiện kiểm thử.
+
+## 3. Kết quả kiểm thử
+
+| Mã | Nội dung kiểm thử | Kết quả | Bằng chứng |
 |---|---|---|---|
-| T01 | Basic boot | PASS | scrum89_clean_build.log; clean build and boot |
-| T02 | User programs | PASS | scrum89_clean_build.log; ls, forktest, ctest |
-| T03 | Independent PID namespace | PASS | `docs/test_evidence/T03_pid_namespace.txt`; two namespace PID 1s, vpid allocation/getpid/wait/kill isolation and init exit/reap |
-| T04 | Process limit | PASS | scrum89_clean_build.log; ctest max_proc=3, overflow rejected; plan suggests 4 |
-| T05 | Process quota release | PASS | scrum89_clean_build.log; wait and fork again succeeded |
-| T06 | Fork bomb containment | NOT RUN | Bounded recursive fork stress and host-shell responsiveness not verified together |
-| T07 | Memory below quota | BLOCKED | T07_mem_config.txt proves configuration only; allocation enforcement not connected |
-| T08 | Memory above quota | BLOCKED | VM allocation enforcement not implemented in available evidence |
-| T09 | Memory release and fork | BLOCKED | Per-container page accounting/recovery not completed |
-| T10 | CPU quota | PASS | T10_cpu_quota.txt; 3 runs PASS; approximate iterations-based result |
-| T11 | CPU quota refresh | PASS | T11_cpu_refresh.txt; 30 nonzero windows across 3 runs |
-| T12 | Multi-hart CPU safety | NOT RUN | QEMU 3 harts; no full concurrency/race safety test |
-| T13 | Root escape protection | PASS | T13_root_escape.txt; T13_f1_enforcement.txt and F1_regression.txt verify root-unset refusal, proc_count unchanged, `/c1` path boundaries and cwd reset; roottest 0 failures |
-| T14 | Multiple concurrent containers | NOT RUN | Different roots/quotas running concurrently not fully verified |
-| T15 | Container cleanup and reuse | BLOCKED | Container destroy/reuse lifecycle not implemented |
-| T16 | xv6 regression | PASS | F1_regression.txt; usertests -q ALL TESTS PASSED; also scrum88_full_regression.log |
+| T01 | Khởi động hệ điều hành | PASS | scrum97_final_build.log |
+| T02 | Thực thi chương trình user | PASS | scrum97_final_build.log |
+| T03 | Cách ly không gian PID | PASS | scrum97_final_cpu_pid.log |
+| T04 | Giới hạn số lượng tiến trình | PASS | scrum97_final_build.log |
+| T05 | Thu hồi quota tiến trình | PASS | scrum97_final_build.log |
+| T06 | Ngăn chặn fork bomb có giới hạn | PASS | scrum97_T06_forkbomb.log |
+| T07 | Cấp phát RAM dưới giới hạn | PASS | scrum94_memory_quota.log |
+| T08 | Từ chối cấp phát RAM vượt giới hạn | PASS | scrum94_memory_quota.log |
+| T09 | Thu hồi bộ nhớ và rollback | PASS | scrum94_memory_quota.log |
+| T10 | Giới hạn thời gian CPU | PASS | scrum97_final_cpu_pid.log |
+| T11 | Làm mới quota CPU theo chu kỳ | PASS | scrum95_cpu_runtime.log |
+| T12 | An toàn CPU trên nhiều hart | PARTIAL PASS | scrum95_subtick.log; scrum95_lock_test.log |
+| T13 | Ngăn thoát khỏi thư mục gốc | PASS | scrum97_T13_root.log |
+| T14 | Cách ly nhiều container đồng thời | PASS | scrum97_T14_multi.log |
+| T15 | Hủy và tái sử dụng container | BLOCKED | Chưa triển khai |
+| T16 | Kiểm thử hồi quy xv6 | PASS | scrum97_final_usertests.log |
 
-## Additional verification
+Các file bằng chứng nằm trong docs/test_evidence/.
 
-- ptest_neg: PASS
-  Evidence: T13_permission_negative.txt; T13_f1_enforcement.txt; F1_regression.txt
-- chroottest /c1: PASS
-  Evidence: final_regression_week3.txt; F1_regression.txt
-- test_sysinfo: PASS
-  Evidence: final_regression_week3.txt; F1_regression.txt
-- CPU benchmark reruns:
-  Evidence: benchmark_rerun_week3.md
-- DEFECT-01: Not reproduced in the latest usertests session.
-  Root cause not confirmed.
-  Evidence: scrum88_full_regression.log; F1_regression.txt
+## 4. Kết quả nổi bật
 
-## Outstanding work
+### T06 – Ngăn chặn fork bomb
 
-1. Run bounded recursive fork stress for T06.
-2. Implement memory quota enforcement and recovery for T07-T09.
-3. Run comprehensive multi-hart concurrency tests for T12.
-4. Run simultaneous-container isolation tests for T14.
-5. Implement container cleanup/reuse for T15.
+- Giới hạn: 8 tiến trình.
+- Số lần fork thành công: 7.
+- Số lần fork bị từ chối: 9.
+- Số tiến trình lớn nhất quan sát được: 8.
+- Số trang bộ nhớ lớn nhất quan sát được: 32.
+- Host vẫn có tiến triển trong quá trình kiểm thử.
+- Tài nguyên được thu hồi sau khi tiến trình kết thúc.
+- Kết quả: 0 failures.
 
-## Conclusion
+### T07–T09 – Giới hạn bộ nhớ
 
-Basic process quota, CPU quota prototype, root isolation,
-permission checks, and xv6 regression have passing evidence.
+- Giới hạn kiểm thử: 32 trang.
+- Bộ nhớ ban đầu: 5 trang.
+- Sau cấp phát eager: 9 trang.
+- Sau thu hồi: 5 trang.
+- Lazy allocation chỉ tính các trang đã truy cập.
+- Fork, exec và cấp phát vượt giới hạn bị từ chối.
+- Bộ nhớ trở về 0 sau khi container kết thúc.
+- Kết quả: 0 failures.
 
-The full 16-case acceptance suite is not yet complete.
+### T10–T12 – Giới hạn CPU
+
+- Thay thế cơ chế đếm timer interrupt bằng runtime accounting.
+- Ghi nhận được thời gian thực thi nhỏ hơn một CPU-tick.
+- Kiểm thử CPU quota thành công.
+- Kiểm thử nhiều tiến trình dùng chung quota thành công.
+- Hai container có quota riêng biệt hoạt động bình thường.
+- Vẫn tồn tại hiện tượng vượt quota tạm thời trên nhiều hart.
+- Chưa chứng minh an toàn locking trong mọi trường hợp.
+
+### T13 – Cách ly thư mục gốc
+
+- Chặn truy cập đường dẫn bên ngoài root.
+- Chặn thoát root bằng đường dẫn cha.
+- Tiến trình con kế thừa root.
+- Thực thi chương trình bên trong root thành công.
+- Kiểm thử quyền cấu hình container thành công.
+- Root test: 0 failures.
+- Permission test: 0 failures.
+
+File descriptor được mở trước khi chroot vẫn có thể sử dụng.
+Đây là giới hạn của cơ chế cách ly hiện tại.
+
+### T14 – Nhiều container đồng thời
+
+Container A:
+
+- Root: /t14a.
+- Giới hạn tiến trình: 4.
+- Giới hạn RAM: 32 trang.
+- CPU quota: 2/20 ticks.
+- Số vòng lặp CPU: 31730000.
+
+Container B:
+
+- Root: /t14b.
+- Giới hạn tiến trình: 6.
+- Giới hạn RAM: 64 trang.
+- CPU quota: 10/20 ticks.
+- Số vòng lặp CPU: 202355000.
+
+Hai container có PID namespace riêng, root riêng
+và cấu hình giới hạn tài nguyên độc lập.
+
+Sau kiểm thử, tài nguyên tiến trình và bộ nhớ
+được thu hồi đầy đủ.
+
+Kết quả: 0 failures.
+
+### T16 – Kiểm thử hồi quy
+
+Lần kiểm thử đầu tiên gặp lỗi hết block filesystem
+tại bài kiểm thử writebig.
+
+Đã tăng FSSIZE từ 2000 lên 4000 blocks,
+tạo lại filesystem và kiểm thử lại.
+
+Kết quả cuối cùng:
+
+ALL TESTS PASSED
+HOST_OK
+
+## 5. Thống kê
+
+- Tổng số test: 16.
+- PASS: 14.
+- PARTIAL PASS: 1.
+- BLOCKED: 1.
+- Tỷ lệ PASS: 87,5%.
+
+Đây là kết quả kiểm thử tích lũy trong tuần 4.
+Không phải toàn bộ 16 test đều được chạy lại
+sau commit thay đổi dung lượng filesystem.
+
+## 6. Hạn chế còn tồn tại
+
+- CPU quota vẫn là soft quota.
+- Có thể vượt ngân sách CPU trên nhiều hart.
+- Tiến trình giữ sleeplock có thể bị throttle.
+- Chưa hỗ trợ hủy và tái sử dụng container.
+- Chưa thực hiện đầy đủ fault injection khi hết RAM.
+- Chưa xác nhận chương trình Container-run đã được tích hợp.
+
+## 7. Kết luận
+
+Các chức năng quản lý tiến trình, PID namespace,
+cách ly thư mục gốc, giới hạn RAM và giới hạn CPU
+đã được tích hợp và kiểm thử.
+
+Hệ thống đã đạt phần lớn mục tiêu kỹ thuật tuần 4.
+
+Hai hạng mục T12 và T15 vẫn cần tiếp tục hoàn thiện
+trong giai đoạn phát triển tiếp theo.

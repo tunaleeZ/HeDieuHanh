@@ -96,3 +96,139 @@ docs/test_evidence/scrum88_full_regression.log
   investigation.
 - Evidence: `docs/test_evidence/T13_f1_enforcement.txt` and
   `docs/test_evidence/F1_regression.txt`.
+
+## Tuần 4 – Tổng hợp lỗi và hướng khắc phục
+
+### F1 – Container chưa cấu hình root
+
+Trạng thái: Đã sửa và kiểm thử lại thành công.
+
+Container chưa có root hợp lệ không được phép
+thực hiện cont_enter().
+
+### F2 – Bỏ sót thời gian CPU dưới một tick
+
+Trạng thái: Đã cải tiến và kiểm chứng.
+
+Thay thế cơ chế đếm timer interrupt bằng đo runtime
+thông qua bộ đếm thời gian RISC-V r_time().
+
+Kết quả kiểm thử ghi nhận runtime từ 45166
+đến 344102 đơn vị thời gian trong các mẫu
+có cpu_used_ticks bằng 0.
+
+### F3 – Throttle tiến trình giữ sleeplock
+
+Trạng thái: Đã kiểm thử, chưa giải quyết hoàn toàn.
+
+Hai tiến trình host và container cùng ghi file
+và đều hoàn thành 100 vòng ghi.
+
+Host hoàn thành trong 25 ticks.
+Container hoàn thành trong 379 ticks.
+
+Không quan sát thấy deadlock trong lần kiểm thử.
+
+Tuy nhiên, chưa chứng minh an toàn trong mọi
+trường hợp tranh chấp sleeplock.
+
+### F4 – Tràn số nguyên khi reserve memory quota
+
+Trạng thái: Đã sửa.
+
+Bổ sung kiểm tra giới hạn trước phép cộng
+trong container_reserve_pages().
+
+Các bài kiểm thử memory quota đã thành công.
+
+### F5 – Sai lệch mốc thời gian CPU period
+
+Trạng thái: Đã cải tiến.
+
+Bổ sung kiểm tra mẫu thời gian cũ nhằm ngăn
+unsigned underflow.
+
+Sau đó chuyển cơ chế period refresh sang r_time().
+
+Chưa có bài kiểm thử tái hiện race condition riêng.
+
+### F10 – Host container root
+
+Trạng thái: Đã sửa và regression thành công.
+
+Không cho phép cấu hình root của container 0.
+
+### F11 – Hủy và tái sử dụng container
+
+Trạng thái: Chưa triển khai.
+
+Container không được tái sử dụng hoàn chỉnh
+sau khi namespace-init kết thúc.
+
+Việc chạy nhiều bài kiểm thử trong cùng phiên
+QEMU có thể làm cạn slot container.
+
+### DEFECT-01 – Nhập nhầm lệnh trong QEMU
+
+Một số lệnh Ubuntu được nhập vào shell xv6,
+gây thông báo exec failed.
+
+Host vẫn hoạt động trong các phiên kiểm thử.
+
+Nguyên nhân của hiện tượng console ban đầu
+chưa được xác nhận hoàn toàn.
+
+### DEFECT-02 – Hết dung lượng filesystem
+
+Hiện tượng:
+
+    test writebig: balloc: out of blocks
+    SOME TESTS FAILED
+
+Nguyên nhân có khả năng cao:
+Filesystem không đủ block trống sau khi bổ sung
+nhiều chương trình kiểm thử.
+
+Giải pháp:
+
+- Tăng FSSIZE từ 2000 lên 4000 blocks.
+- Clean build.
+- Tạo lại filesystem image.
+- Chạy lại usertests -q.
+
+Kết quả:
+
+    ALL TESTS PASSED
+    HOST_OK
+
+Commit khắc phục: 4de9a01.
+
+Bằng chứng:
+
+- docs/test_evidence/scrum97_usertests_fsfull.log
+- docs/test_evidence/scrum97_final_usertests.log
+
+### DEFECT-03 – Vượt CPU quota trên nhiều hart
+
+Trạng thái: Hạn chế đã được ghi nhận.
+
+Ngân sách CPU kiểm thử: 5000000 đơn vị runtime.
+
+Runtime lớn nhất quan sát được: 7559548.
+
+Mức vượt ngân sách tại mẫu quan sát: 51,19%.
+
+Nguyên nhân phù hợp với cơ chế soft quota:
+Nhiều hart có thể thực thi đồng thời trước
+khi runtime được cập nhật.
+
+Cần nghiên cứu cơ chế giới hạn chặt hơn
+trong các tuần tiếp theo.
+
+### Hạn chế cách ly file descriptor
+
+File descriptor đã được mở trước khi chroot
+vẫn có thể sử dụng sau khi thay đổi root.
+
+Cơ chế hiện tại chủ yếu cách ly đường dẫn,
+không cung cấp cách ly tài nguyên tuyệt đối.

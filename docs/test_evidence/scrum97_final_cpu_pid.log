@@ -1,0 +1,68 @@
+Script started on 2026-11-20 15:58:26+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 1 starting
+hart 2 starting
+init: starting sh
+$ pidns_test
+=== T03 PID namespace ===
+T03-04 host getpid: PASS
+T03-01 distinct host-visible leader PIDs: PASS
+T03-02 two independent namespace PID 1s: PASS
+T03-03/04 allocation/getpid: leaders PID 1, workers PID 2, three unique children each
+T03-05/06 namespace A kill and wait: PASS
+T03-06/08 namespace B isolation and kill: PASS
+T03-07 namespace-init exit/reap: PASS
+=== T03 result: 0 failure(s) ===
+$ cputest
+=== CPU QUOTA TEST (200 ticks, period 20, quota 5) ===
+cont_info before workload: id=4 period=20 quota=5 used=0
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3175
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3195
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3215
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3235
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3255
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3275
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3295
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3315
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3335
+cont_info during workload: id=4 period=20 quota=5 used=5
+HOST_PROGRESS: tick 3355
+cont_info during workload: id=4 period=20 quota=5 used=1
+A window 1 (20 ticks): 10512000 iterations
+A window 2 (20 ticks): 10473000 iterations
+A window 3 (20 ticks): 10816000 iterations
+A window 4 (20 ticks): 9215000 iterations
+A window 5 (20 ticks): 10670000 iterations
+A window 6 (20 ticks): 9339000 iterations
+A window 7 (20 ticks): 11502000 iterations
+A window 8 (20 ticks): 10133000 iterations
+A window 9 (20 ticks): 10057000 iterations
+A window 10 (20 ticks): 7831000 iterations
+RESULT: container A iterations=100548000 zero_windows=0
+RESULT: host B iterations=359737000
+cont_info after workload: id=4 period=20 quota=5 used=1
+=== CPU QUOTA TEST PASS ===
+$ cpuisotest
+=== CPU CONTAINER ISOLATION TEST ===
+ISOLATION_RESULT: A quota=2 iterations=92235000
+ISOLATION_RESULT: B quota=10 iterations=588400000
+PASS: higher-quota worker made more progress
+PASS: independent quotas and resource recovery
+=== CPU ISOLATION TEST: 0 failures ===
+$ echo HOST_OK
+HOST_OK
+$ QEMU: Terminated
+
+Script done on 2026-11-20 16:04:58+07:00 [COMMAND_EXIT_CODE="0"]

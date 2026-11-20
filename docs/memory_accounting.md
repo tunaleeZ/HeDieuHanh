@@ -122,3 +122,89 @@ Các hook kể trên chỉ đếm user data pages. `freewalk()` vẫn giải ph�
 `container_reserve_pages(c, n)` từ chối container null, `n < 0`, container inactive hoặc trường hợp `max_pages > 0` và tổng trang vượt giới hạn; nếu hợp lệ, tăng `pages_used` dưới `c->lock`. `container_release_pages(c, n)` giảm bộ đếm dưới lock và panic nếu container/giá trị không hợp lệ hoặc số trang giải phóng lớn hơn `pages_used`. Đây là helper nền, hiện chưa được gọi từ `uvmalloc()`, `vmfault()`, `uvmcopy()` hay các đường free.
 
 `kcontainer_set_mem(id, max_pages)` yêu cầu caller thuộc host, `0 < id < NCONTAINER`, container active và `max_pages >= 0`; quota dương không được đặt thấp hơn `pages_used`. Khi hợp lệ, chỉ cập nhật `max_pages` dưới `c->lock`. `kcontainer_info()` đã đọc/trả `max_pages` và `pages_used` dưới cùng lock. Test cấu hình trong `ctest` xác nhận set/readback 64 trang, từ chối giá trị âm và từ chối lời gọi setter từ trong container. Vì VM hooks chưa được nối, test này không chứng minh giới hạn cấp phát trang đã enforce; `pages_used` vẫn là 0 trong hoạt động hiện tại.
+
+## 8. Cập nhật triển khai tuần 4 – SCRUM-94
+
+### 8.1. Mục tiêu
+
+Hoàn thiện cơ chế giới hạn bộ nhớ vật lý
+theo từng container.
+
+Các phần trước mô tả thiết kế và trạng thái
+groundwork của tuần 3.
+
+Trong tuần 4, memory accounting đã được
+tích hợp vào các đường cấp phát và thu hồi.
+
+### 8.2. Các hàm được bổ sung
+
+- uvm_count_pages()
+- uvmalloc_accounted()
+- uvmdealloc_accounted()
+- uvmcopy_accounted()
+- proc_freepagetable_accounted()
+
+### 8.3. Các vị trí tích hợp
+
+- growproc(): Cấp phát và thu nhỏ heap.
+- kfork(): Sao chép bộ nhớ tiến trình con.
+- freeproc(): Thu hồi bộ nhớ tiến trình.
+- kexec(): Quản lý bộ nhớ image mới và cũ.
+- vmfault(): Cấp phát trang vật lý khi lazy fault.
+- kcontainer_enter(): Chuyển quyền sở hữu bộ nhớ.
+
+### 8.4. Nguyên tắc tính bộ nhớ
+
+Chỉ tính các trang vật lý thuộc image tiến trình,
+bao gồm trang bảo vệ stack.
+
+Không tính:
+
+- Kernel stack.
+- Page table.
+- Trapframe.
+- Trampoline.
+
+Công thức:
+
+    RAM sử dụng = pages_used * 4096 byte
+
+max_pages = 0 nghĩa là không giới hạn.
+
+### 8.5. Kết quả thực nghiệm
+
+Giới hạn RAM kiểm thử: 32 trang.
+
+- Ban đầu: 5 trang.
+- Cấp phát eager 4 trang: tăng lên 9 trang.
+- Thu hồi: trở về 5 trang.
+- Lazy allocation 4 trang chưa sử dụng: không tăng.
+- Truy cập 2 trang lazy: tăng lên 7 trang.
+- Thu hồi lazy allocation: trở về 5 trang.
+
+Các yêu cầu vượt quota bị từ chối.
+
+Sau khi tiến trình kết thúc và được reap:
+
+    proc_count = 0
+    pages_used = 0
+
+Kết quả memquotatest: 0 failures.
+
+### 8.6. Hạn chế
+
+- Chưa tính toàn bộ chi phí bộ nhớ kernel.
+- Exec tạm thời tính cả image cũ và image mới.
+- Chưa kiểm thử đầy đủ lỗi cấp phát RAM giữa chừng.
+- Việc duyệt vùng địa chỉ lazy lớn có thể
+  làm tăng chi phí xử lý.
+
+### 8.7. Kết luận
+
+Memory quota đã được triển khai và kiểm thử
+thành công trong các kịch bản T07–T09.
+
+Chi tiết triển khai và kết quả kiểm thử:
+
+- docs/Scrum94_handoff.md
+- docs/test_evidence/scrum94_memory_quota.log

@@ -1,0 +1,36 @@
+Script started on 2026-11-20 16:05:01+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 1 starting
+hart 2 starting
+init: starting sh
+$ test_sysinfo
+=== SYSTEM RESOURCE INFORMATION ===
+Free memory: 133255168 bytes
+Used process slots: 3
+PASS: sysinfo syscall
+$ usertests -q
+usertests starting
+test copyin: OK
+test copyout: OK
+test copyinstr1: OK
+test copyinstr2: OK
+test copyinstr3: OK
+test rwsbrk: OK
+test truncate1: OK
+test truncate2: OK
+test truncate3: OK
+test openiput: OK
+test exitiput: OK
+test iput: OK
+test opentest: OK
+test writetest: OK
+test writebig: balloc: out of blocks
+writebig: error: write big file failed i=169
+FAILED
+SOME TESTS FAILED
+$ QEMU: Terminated
+
+Script done on 2026-11-20 16:07:29+07:00 [COMMAND_EXIT_CODE="0"]
