@@ -1118,7 +1118,9 @@ container_cpu_allowed(struct container *c)
   if (c->cpu_quota_ticks == 0) {
     allowed = 1;
   } else {
+    // Ignore stale time samples to prevent unsigned underflow.
     if (c->cpu_period_ticks > 0 &&
+        now >= c->cpu_period_start &&
         now - c->cpu_period_start >= c->cpu_period_ticks) {
       elapsed = now - c->cpu_period_start;
       periods = elapsed / c->cpu_period_ticks;
