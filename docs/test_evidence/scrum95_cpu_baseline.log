@@ -1,0 +1,127 @@
+Script started on 2026-11-20 14:09:22+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 2 starting
+hart 1 starting
+init: starting sh
+$ cputest
+=== CPU QUOTA TEST (200 ticks, period 20, quota 5) ===
+cont_info before workload: id=1 period=20 quota=5 used=0
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 92
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 112
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 132
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 152
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 172
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 192
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 212
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 232
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 252
+cont_info during workload: id=1 period=20 quota=5 used=5
+HOST_PROGRESS: tick 272
+cont_info during workload: id=1 period=20 quota=5 used=1
+A window 1 (20 ticks): 10433000 iterations
+A window 2 (20 ticks): 10549000 iterations
+A window 3 (20 ticks): 9389000 iterations
+A window 4 (20 ticks): 9984000 iterations
+A window 5 (20 ticks): 10833000 iterations
+A window 6 (20 ticks): 11049000 iterations
+A window 7 (20 ticks): 10393000 iterations
+A window 8 (20 ticks): 10110000 iterations
+A window 9 (20 ticks): 8606000 iterations
+A window 10 (20 ticks): 9183000 iterations
+RESULT: container A iterations=100529000 zero_windows=0
+RESULT: host B iterations=472103000
+cont_info after workload: id=1 period=20 quota=5 used=1
+=== CPU QUOTA TEST PASS ===
+$ cputest
+=== CPU QUOTA TEST (200 ticks, period 20, quota 5) ===
+cont_info before workload: id=2 period=20 quota=5 used=0
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 380
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 400
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 420
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 440
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 460
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 480
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 500
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 520
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 540
+cont_info during workload: id=2 period=20 quota=5 used=5
+HOST_PROGRESS: tick 560
+cont_info during workload: id=2 period=20 quota=5 used=1
+A window 1 (20 ticks): 9502000 iterations
+A window 2 (20 ticks): 8906000 iterations
+A window 3 (20 ticks): 10319000 iterations
+A window 4 (20 ticks): 7180000 iterations
+A window 5 (20 ticks): 6985000 iterations
+A window 6 (20 ticks): 8511000 iterations
+A window 7 (20 ticks): 4346000 iterations
+A window 8 (20 ticks): 9122000 iterations
+A window 9 (20 ticks): 9170000 iterations
+A window 10 (20 ticks): 8167000 iterations
+RESULT: container A iterations=82208000 zero_windows=0
+RESULT: host B iterations=390690000
+cont_info after workload: id=2 period=20 quota=5 used=1
+=== CPU QUOTA TEST PASS ===
+$ cputest
+=== CPU QUOTA TEST (200 ticks, period 20, quota 5) ===
+cont_info before workload: id=3 period=20 quota=5 used=0
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1228
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1248
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1268
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1288
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1308
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1328
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1348
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1368
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1388
+cont_info during workload: id=3 period=20 quota=5 used=5
+HOST_PROGRESS: tick 1408
+cont_info during workload: id=3 period=20 quota=5 used=1
+A window 1 (20 ticks): 7490000 iterations
+A window 2 (20 ticks): 8693000 iterations
+A window 3 (20 ticks): 8527000 iterations
+A window 4 (20 ticks): 8256000 iterations
+A window 5 (20 ticks): 9352000 iterations
+A window 6 (20 ticks): 9135000 iterations
+A window 7 (20 ticks): 8890000 iterations
+A window 8 (20 ticks): 7604000 iterations
+A window 9 (20 ticks): 5833000 iterations
+A window 10 (20 ticks): 4585000 iterations
+RESULT: container A iterations=78365000 zero_windows=0
+RESULT: host B iterations=311620000
+cont_info after workload: id=3 period=20 quota=5 used=1
+=== CPU QUOTA TEST PASS ===
+$ echo HOST_OK
+HOST_OK
+$ QEMU: Terminated
+
+Script done on 2026-11-20 14:12:11+07:00 [COMMAND_EXIT_CODE="0"]
