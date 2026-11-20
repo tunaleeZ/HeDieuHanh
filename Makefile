@@ -131,6 +131,7 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
 .PRECIOUS: %.o
 
 UPROGS=\
+	$U/_container-run\
 	$U/_bench_proc\
 	$U/_bench_mem\
 	$U/_bench_cpu\

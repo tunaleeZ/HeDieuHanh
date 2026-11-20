@@ -18,8 +18,8 @@ Xây dựng công cụ tiện ích user-space `container-run` để tạo, cấu
 
 | Sub-task | Trạng thái | Commit | Ghi chú |
 |---|---|---|---|
-| 5.1 Design CLI | Hoàn tất | `docs: Design CLI` | Thiết kế chi tiết CLI, quy trình an toàn 0-6, xử lý edge case tại `docs/container_run_design.md`. |
-| 5.2 Implement container-run | Chưa chạy | - | Xây dựng `user/container-run.c` và tích hợp vào `Makefile`. |
+| 5.1 Design CLI | Hoàn tất | `cda2e28` | Thiết kế chi tiết CLI, quy trình an toàn 0-6, xử lý edge case tại `docs/container_run_design.md`. |
+| 5.2 Implement container-run | Hoàn tất | `feat: Implement container-run` | Cài đặt `user/container-run.c` đầy đủ tính năng; build sạch và kiểm thử cơ bản PASS. |
 | 5.3 Integration demo | Chưa chạy | - | Thực hiện kịch bản demo S1–S10 trên fixture `/c1`. |
 | 5.4 Documentation | Chưa chạy | - | Soạn thảo `docs/container_run_guide.md` và hoàn thiện handoff. |
 
