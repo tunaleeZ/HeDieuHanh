@@ -83,8 +83,6 @@ usertrap(void)
 
   // give up the CPU if this is a timer interrupt.
   if (which_dev == 2) {
-    if (p != 0 && p->container != 0)
-      container_charge_tick(p->container);
     yield();
   }
 
@@ -156,11 +154,9 @@ kerneltrap()
     panic("kerneltrap");
   }
 
-  // Charge and give up the CPU if this is a timer interrupt.
+  // Give up the CPU if this is a timer interrupt.
   if (which_dev == 2) {
     struct proc *p = myproc();
-    if (p != 0 && p->container != 0)
-      container_charge_tick(p->container);
     if (p != 0)
       yield();
   }

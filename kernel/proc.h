@@ -94,6 +94,7 @@ struct container {
   uint64 cpu_quota_ticks;  // 0 = unlimited
   uint64 cpu_used_ticks;
   uint64 cpu_period_start;
+  uint64 cpu_used_runtime;
   int max_pages; // 0 = unlimited
   int pages_used;
   struct spinlock lock; // Protect container data
@@ -137,5 +138,8 @@ struct proc {
   struct inode *cwd;           // Current directory
   struct inode *root;          // Root directory
   struct container *container; // Container this process belongs to
+ // struct container *container;
+  uint64 cpu_run_start; 
+  struct container *cpu_run_owner;
   char name[16];               // Process name (debugging)
 };

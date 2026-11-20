@@ -217,7 +217,8 @@ procinit(void)
     containers[i].cpu_period_ticks = CPU_DEFAULT_PERIOD;
     containers[i].cpu_quota_ticks = 0;
     containers[i].cpu_used_ticks = 0;
-    containers[i].cpu_period_start = ticks;
+    containers[i].cpu_used_runtime = 0;
+    containers[i].cpu_period_start = r_time();
     containers[i].max_pages = 0;
     containers[i].pages_used = 0;
   }
@@ -707,6 +708,9 @@ kwait(uint64 addr)
 //  - swtch to start running that process.
 //  - eventually that process transfers control
 //    via swtch back to the scheduler.
+static void container_runtime_charge(struct container *, uint64);
+static void container_runtime_refresh(struct container *, uint64);
+
 void
 scheduler(void)
 {
@@ -739,7 +743,15 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+        p->cpu_run_owner = p->container;
+        p->cpu_run_start = r_time();
+
         swtch(&c->context, &p->context);
+
+        container_runtime_charge(p->cpu_run_owner,
+                                 p->cpu_run_start);
+        p->cpu_run_owner = 0;
+        p->cpu_run_start = 0;
 
         // Don't re-enable interrupts on release.
         mycpu()->intena = 0;
@@ -1009,7 +1021,7 @@ int
 kcontainer_create(int max_proc)
 {
   int i;
-  uint64 now = ticks;
+ 
 
   if (!container_is_host())
     return -1;
@@ -1030,7 +1042,8 @@ kcontainer_create(int max_proc)
       containers[i].cpu_period_ticks = CPU_DEFAULT_PERIOD;
       containers[i].cpu_quota_ticks = 0;
       containers[i].cpu_used_ticks = 0;
-      containers[i].cpu_period_start = now;
+    containers[i].cpu_used_runtime = 0;
+      containers[i].cpu_period_start = r_time();
       containers[i].max_pages = 0;
       containers[i].pages_used = 0;
 
@@ -1049,14 +1062,11 @@ int
 kcontainer_set_cpu(int id, int quota, int period)
 {
   struct container *c;
-  uint64 now;
 
   if (!container_is_host() || id <= 0 || id >= NCONTAINER || quota < 0 ||
       period <= 0 || quota > period)
     return -1;
 
-  now =
-    ticks; // Approximate sample; do not nest tickslock with container->lock.
   c = &containers[id];
   acquire(&c->lock);
   if (!c->active) {
@@ -1066,7 +1076,8 @@ kcontainer_set_cpu(int id, int quota, int period)
   c->cpu_period_ticks = period;
   c->cpu_quota_ticks = quota;
   c->cpu_used_ticks = 0;
-  c->cpu_period_start = now;
+  c->cpu_used_runtime = 0;
+  c->cpu_period_start = r_time();
   release(&c->lock);
   return 0;
 }
@@ -1092,44 +1103,80 @@ kcontainer_set_mem(int id, int max_pages)
 }
 
 // Charge one approximate CPU tick to the process's container.
-void
-container_charge_tick(struct container *c)
+// One nominal CPU tick in RISC-V time-counter units.
+#define CPU_TICK_RUNTIME 1000000ULL
+
+// Caller must hold c->lock.
+static void
+container_runtime_refresh(struct container *c, uint64 now)
 {
+  uint64 period, elapsed, periods;
+
+  period = c->cpu_period_ticks * CPU_TICK_RUNTIME;
+
+  if (period == 0 || now < c->cpu_period_start)
+    return;
+
+  elapsed = now - c->cpu_period_start;
+
+  if (elapsed >= period) {
+    periods = elapsed / period;
+    c->cpu_period_start += periods * period;
+    c->cpu_used_runtime = 0;
+    c->cpu_used_ticks = 0;
+  }
+}
+
+// Account the current-period portion of a completed runtime slice.
+static void
+container_runtime_charge(struct container *c, uint64 start)
+{
+  uint64 now, elapsed;
+
   if (c == 0)
     return;
+
   acquire(&c->lock);
-  c->cpu_used_ticks++;
+  now = r_time();
+
+  container_runtime_refresh(c, now);
+
+  if (start < c->cpu_period_start)
+    start = c->cpu_period_start;
+
+  if (now >= start) {
+    elapsed = now - start;
+
+    c->cpu_used_runtime += elapsed;
+
+    c->cpu_used_ticks =
+      c->cpu_used_runtime / CPU_TICK_RUNTIME;
+  }
+
   release(&c->lock);
 }
 
-// Decide whether a container may run in the current soft-quota period.
+// Decide whether a container has CPU runtime remaining.
 int
 container_cpu_allowed(struct container *c)
 {
-  uint64 now, elapsed, periods;
+  uint64 limit;
   int allowed;
 
   if (c == 0 || c->id == 0)
     return 1;
 
-  // ticks is sampled without tickslock; this is approximate by design.
-  now = ticks;
   acquire(&c->lock);
-  if (c->cpu_quota_ticks == 0) {
-    allowed = 1;
-  } else {
-    // Ignore stale time samples to prevent unsigned underflow.
-    if (c->cpu_period_ticks > 0 &&
-        now >= c->cpu_period_start &&
-        now - c->cpu_period_start >= c->cpu_period_ticks) {
-      elapsed = now - c->cpu_period_start;
-      periods = elapsed / c->cpu_period_ticks;
-      c->cpu_period_start += periods * c->cpu_period_ticks;
-      c->cpu_used_ticks = 0;
-    }
-    allowed = c->cpu_used_ticks < c->cpu_quota_ticks;
-  }
+
+  container_runtime_refresh(c, r_time());
+
+  limit = c->cpu_quota_ticks * CPU_TICK_RUNTIME;
+
+  allowed = (limit == 0 ||
+             c->cpu_used_runtime < limit);
+
   release(&c->lock);
+
   return allowed;
 }
 
@@ -1205,6 +1252,14 @@ kcontainer_enter(int id)
   p->container = new;
   p->virtual_pid = virtual_pid;
   release(&new->lock);
+
+  // Finish accounting for the old container before
+  // starting runtime accounting for the new container.
+  container_runtime_charge(p->cpu_run_owner,
+                           p->cpu_run_start);
+  p->cpu_run_owner = new;
+  p->cpu_run_start = r_time();
+
   release(&p->lock);
 
   // Release memory and process quota in the old container.

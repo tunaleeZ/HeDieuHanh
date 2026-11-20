@@ -118,7 +118,6 @@ int             kcontainer_set_cpu(int, int, int);
 int             kcontainer_set_mem(int, int);
 int             container_reserve_pages(struct container *, int);
 void            container_release_pages(struct container *, int);
-void            container_charge_tick(struct container *);
 int             container_cpu_allowed(struct container *);
 
 // swtch.S
