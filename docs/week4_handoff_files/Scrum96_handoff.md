@@ -10,7 +10,7 @@ Xây dựng công cụ tiện ích user-space `container-run` để tạo, cấu
 - [x] **AC-2:** Container root được thiết lập an toàn trước khi tiến trình đi vào (Bằng chứng: S1, S8, `roottest`).
 - [x] **AC-3:** Cấu hình process, CPU và memory quota được truyền đúng qua API (Bằng chứng: S4, S5, S6).
 - [x] **AC-4:** Trường hợp lỗi được xử lý an toàn, không làm hỏng shell host (Bằng chứng: S2, S3, S7, S10).
-- [ ] **AC-5:** Có đầy đủ demo, mã nguồn, log và tài liệu hướng dẫn (Đang tiến hành, hoàn tất ở 5.4).
+- [x] **AC-5:** Có đầy đủ demo, mã nguồn, log và tài liệu hướng dẫn (Bằng chứng: `user/container-run.c`, `docs/container_run_design.md`, `docs/test_evidence/container_run_demo.txt`, `docs/container_run_guide.md`).
 
 ---
 
@@ -20,8 +20,8 @@ Xây dựng công cụ tiện ích user-space `container-run` để tạo, cấu
 |---|---|---|---|
 | 5.1 Design CLI | Hoàn tất | `cda2e28` | Thiết kế chi tiết CLI, quy trình an toàn 0-6, xử lý edge case tại `docs/container_run_design.md`. |
 | 5.2 Implement container-run | Hoàn tất | `1f2d682` | Cài đặt `user/container-run.c` đầy đủ tính năng; build sạch và kiểm thử cơ bản PASS. |
-| 5.3 Integration demo | Hoàn tất | `test: Integration demo` | Thực nghiệm đầy đủ 10 kịch bản S1–S10 và regression tests, log lưu tại `docs/test_evidence/container_run_demo.txt`. |
-| 5.4 Documentation | Chưa chạy | - | Soạn thảo `docs/container_run_guide.md` và hoàn thiện handoff. |
+| 5.3 Integration demo | Hoàn tất | `fb0ff5c` | Thực nghiệm đầy đủ 10 kịch bản S1–S10 và regression tests, log lưu tại `docs/test_evidence/container_run_demo.txt`. |
+| 5.4 Documentation | Hoàn tất | `docs: Documentation` | Soạn thảo toàn văn hướng dẫn sử dụng `docs/container_run_guide.md` và hoàn tất handoff. |
 
 ---
 
@@ -76,6 +76,11 @@ Toàn văn log thực nghiệm được lưu tại: [docs/test_evidence/containe
 
 ---
 
-## 6. Bước tiếp theo
-- Thực hiện commit `test: Integration demo`.
-- Chuyển sang Sub-task 5.4: Soạn thảo tài liệu hướng dẫn [docs/container_run_guide.md](file:///home/tuan/xv6_lab/xv6-riscv/docs/container_run_guide.md) và hoàn tất hồ sơ bàn giao.
+## 6. Tổng kết Danh sách Commit Task SCRUM-96
+
+1. `cda2e28` - `docs: Design CLI` (Thiết kế chi tiết CLI, quy trình an toàn 0-6)
+2. `1f2d682` - `feat: Implement container-run` (Hiện thực mã nguồn `user/container-run.c` và tích hợp `Makefile`)
+3. `fb0ff5c` - `test: Integration demo` (Bằng chứng thực nghiệm 10 kịch bản S1–S10 và regression tests)
+4. `docs: Documentation` (Tài liệu hướng dẫn sử dụng và hoàn tất handoff)
+
+*Trạng thái:* Toàn bộ 4 sub-tasks và 5 Acceptance Criteria của task SCRUM-96 đã hoàn thành xuất sắc. Nhánh `main` sạch sẽ và sẵn sàng để người dùng push và cập nhật Jira.
