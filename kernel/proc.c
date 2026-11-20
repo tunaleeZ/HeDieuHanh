@@ -1334,6 +1334,7 @@ kcontainer_info(int id, struct container_info *info)
   info->cpu_period_ticks = c->cpu_period_ticks;
   info->cpu_quota_ticks = c->cpu_quota_ticks;
   info->cpu_used_ticks = c->cpu_used_ticks;
+  info->cpu_used_runtime = c->cpu_used_runtime;
   info->max_pages = c->max_pages;
   info->pages_used = c->pages_used;
 

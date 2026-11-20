@@ -10,6 +10,7 @@ struct container_info {
   uint64 cpu_period_ticks;
   uint64 cpu_quota_ticks;
   uint64 cpu_used_ticks;
+  uint64 cpu_used_runtime;
   int max_pages;
   int pages_used;
 };
