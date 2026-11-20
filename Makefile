@@ -164,6 +164,7 @@ UPROGS=\
 	$U/_outsideexec\
 	$U/_setupc1\
 	$U/_ptest_neg\
+	$U/_cpuisotest \
 	$U/_cpulocktest \
 	$U/_cpusafetytest \
 	$U/_cputest\
