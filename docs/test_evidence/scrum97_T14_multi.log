@@ -1,0 +1,104 @@
+Script started on 2026-11-20 15:43:05+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+mkfs/mkfs fs.img README user/_bench_proc user/_bench_mem user/_bench_cpu user/_copyfile user/_cat user/_echo user/_forktest user/_grep user/_init user/_kill user/_ln user/_ls user/_mkdir user/_rm user/_sh user/_stressfs user/_usertests user/_grind user/_wc user/_zombie user/_logstress user/_forphan user/_dorphan user/_sync user/_hello user/_memquotatest user/_ctest user/_pidns_test user/_chroottest user/_roottest user/_outsideexec user/_setupc1 user/_ptest_neg user/_multi_ctest user/_forkbombtest user/_cpuisotest user/_cpulocktest user/_cpusafetytest user/_cputest user/_test_sysinfo
+nmeta 47 (boot, super, log blocks 31, inode blocks 13, bitmap blocks 1) blocks 1953 total 2000
+balloc: first 1830 blocks have been allocated
+balloc: write bitmap block at sector 46
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 1 starting
+hart 2 starting
+init: starting sh
+$ multi_ctest
+=== T14 MULTI-CONTAINER TEST ===
+CONTAINCOENRT_ARIENER_RAEDAYD:Y :A  iB id=2 pid=1
+PASdS=:1 na mpieds=pa1c
+e PASS: namleeasdpearc eP IlDe a1
+PAderS SPI:D  1
+PASS:c ocrorrercetc ptr ipvraitvea treo orto omatr kemra
+rkerPASS:
+ othePrA ScSo: ntoatihneer rc opnrtaiinveater  pfriilvea btel ofcikleed 
+PbAlSoSc: hkoed
+stP file blocked
+PASS: parent traversal blocked
+PASS: cross-root traversal blocked
+PASS: cwd remains inside root
+ASS: host file blocked
+PASS: parent traversal blocked
+PASS: cross-root traversal blocked
+PASS: cwd remains inside root
+PASS: both containers ready
+PASS: two containers active simultaneously
+PASS: releasePASS: indepe PnbAotSdhS :w oeriknldependent quootadnst
+a M UcLoTnIfqiugoutra_ SaAcoMtPLE: A iporno
+c=P1A SpSa:ges= n5m eBm oprryofc =c1h apraggeedsi=g5u
+raHtOiSoTn_
+PRPOAGSRSESS::  mteimcokr=y1 5c1h
+arged to current container
+PASS: memory shrink succeeded
+PASS: memory accounting recovered
+PASS: allocation above memory quota rejected
+PASS: process quota enforced
+PASS: container reached its own process limit
+PASS: child processes reclaimed
+MULTI_SAMPLE: A proc=1 pages=7 B proc=1 pages=5
+HOST_PROGRESS: tick=161
+ to current container
+PASS: memory shrink succeeded
+PASS: memory accounting recovered
+PASS: allocation above memory quota rejected
+PASS: process quota enforced
+PASS: container reached its own process limit
+MULTI_SAMPLE: A proc=4 pages=20 B proc=1 pages=5
+HOST_PROGRESS: tick=171
+MULTI_SAMPLE: A proc=4 pages=20 B proc=1 pages=5
+HOST_PROGRESS: tick=181
+PASS: child processes reclaimed
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=191
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=201
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=211
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=221
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=231
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=241
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=251
+PASS: CPU workload made progress
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=261
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=271
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=281
+PASS: CPU workload made progress
+MULTI_SAMPLE: A proc=1 pages=5 B proc=1 pages=5
+HOST_PROGRESS: tick=291
+MULTI_RESULT: A iterations=27035000
+MULTI_RESULT: B iterations=208290000
+PASS: both CPU workloads completed
+PASS: both containers fully reclaimed
+PASS: host filesystem remains accessible
+=== T14 MULTI-CONTAINER TEST: 0 failures ===
+$ echo HOST_OK
+HOST_OK
+$ sed -i 's/\r$//' \
+docs/test_evidence/scrum97_T14_multi.log
+
+grep -nE 'CONTAINER_READY|MULTI_SAMPLE|MULTI_RESULT|HOST_PROGRESS|PASSIL|failures|paniexec sed failed
+$ exec docs/test_evidence/scrum97_T14_multi.log failed
+$ $ x
+exec MULTI_SAMPLE failed
+exec MULTI_RESULT failed
+exec HOST_PROGRESS failed
+exec PASSIL failed
+exec failures failed
+exec panix failed
+$ QEMU: Terminated
+
+Script done on 2026-11-20 15:44:00+07:00 [COMMAND_EXIT_CODE="0"]
