@@ -1,0 +1,53 @@
+Script started on 2026-11-20 15:18:03+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+mkfs/mkfs fs.img README user/_bench_proc user/_bench_mem user/_bench_cpu user/_copyfile user/_cat user/_echo user/_forktest user/_grep user/_init user/_kill user/_ln user/_ls user/_mkdir user/_rm user/_sh user/_stressfs user/_usertests user/_grind user/_wc user/_zombie user/_logstress user/_forphan user/_dorphan user/_sync user/_hello user/_memquotatest user/_ctest user/_pidns_test user/_chroottest user/_roottest user/_outsideexec user/_setupc1 user/_ptest_neg user/_forkbombtest user/_cpuisotest user/_cpulocktest user/_cpusafetytest user/_cputest user/_test_sysinfo
+nmeta 47 (boot, super, log blocks 31, inode blocks 13, bitmap blocks 1) blocks 1953 total 2000
+balloc: first 1775 blocks have been allocated
+balloc: write bitmap block at sector 46
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 2 starting
+hart 1 starting
+init: starting sh
+$ forkbombtest
+=== T06 FORK BOMB CONTAINMENT TEST ===
+FORK_SAMPLE: proc=0 limit=8 pages=0
+HOST_PROGRESS: tick=136
+FORK_SAMPLE: proc=8 limit=8 pages=32
+HOST_PROGRESS: tick=141
+FORK_SAMPLE: proc=8 limit=8 pages=32
+HOST_PROGRESS: tick=146
+FORK_SAMPLE: proc=8 limit=8 pages=32
+HOST_PROGRESS: tick=151
+FORK_SAMPLE: proc=8 limit=8 pages=32
+HOST_PROGRESS: tick=156
+FORK_SAMPLE: proc=8 limit=8 pages=32
+HOST_PROGRESS: tick=161
+FORK_SAMPLE: proc=8 limit=8 pages=32
+HOST_PROGRESS: tick=166
+FORK_SAMPLE: proc=1 limit=8 pages=4
+HOST_PROGRESS: tick=171
+FORK_SAMPLE: proc=1 limit=8 pages=4
+HOST_PROGRESS: tick=176
+FORK_SAMPLE: proc=1 limit=8 pages=4
+HOST_PROGRESS: tick=181
+FORK_SAMPLE: proc=1 limit=8 pages=4
+HOST_PROGRESS: tick=186
+FORK_SAMPLE: proc=1 limit=8 pages=4
+HOST_PROGRESS: tick=191
+FORK_SAMPLE: proc=1 limit=8 pages=4
+HOST_PROGRESS: tick=196
+FORK_SAMPLE: proc=1 limit=8 pages=4
+HOST_PROGRESS: tick=201
+FORK_SAMPLE: proc=1 limit=8 pages=4
+HOST_PROGRESS: tick=206
+FORK_RESULT: accepted=7 rejected=9 peak=8
+PASS: bounded fork pressure contained
+PASS: process and memory recovered
+=== T06 FORK BOMB TEST: 0 failures ===
+$ echo HOST) _OK'
+HOST_OK'
+$ QEMU: Terminated
+
+Script done on 2026-11-20 15:18:49+07:00 [COMMAND_EXIT_CODE="0"]
