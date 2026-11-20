@@ -136,3 +136,70 @@ have been verified in the tested scenarios.
 
 Remaining soft-quota and locking limitations are
 documented and require further improvement.
+
+## 11. Final Verification
+
+### PID Namespace Recheck
+
+Executed pidns_test in a fresh QEMU session.
+
+Result:
+- T03 result: 0 failures.
+- HOST_OK.
+
+The previous repeated setup failure is consistent
+with container slot exhaustion, but its exact cause
+has not been independently confirmed.
+
+### Independent CPU Quota Isolation
+
+Test program: user/cpuisotest.c
+
+Environment:
+- QEMU with 3 harts.
+- Test duration: 200 ticks.
+- CPU period: 20 ticks.
+
+Container A:
+- CPU quota: 2 ticks.
+- Iterations: 76590000.
+
+Container B:
+- CPU quota: 10 ticks.
+- Iterations: 431830000.
+
+Theoretical quota ratio B/A: 5.
+Observed iteration ratio B/A: approximately 5.64.
+
+Results:
+- Higher-quota worker made more progress: PASS.
+- Independent quotas: PASS.
+- Process resource recovery: PASS.
+- Memory resource recovery: PASS.
+- CPU ISOLATION TEST: 0 failures.
+- HOST_OK.
+
+The result verifies independent CPU quota behavior
+in the tested workload, not strict CPU isolation.
+
+Additional evidence:
+- docs/test_evidence/scrum95_pidns_recheck.log
+- docs/test_evidence/scrum95_cpu_isolation.log
+
+## 12. Implementation Commits
+
+- 10407eb: Guard CPU period refresh against stale ticks.
+- 5232d94: Record CPU quota baseline.
+- 89210d3: Implement runtime-based CPU quota accounting.
+- bb0fb1f: Add runtime monitoring and CPU safety tests.
+- 16da09e: Add independent CPU quota isolation test.
+
+## 13. Final Status
+
+Implementation and planned functional verification
+are complete.
+
+The CPU quota remains a soft quota.
+
+Multi-hart overshoot and sleeplock-holder throttling
+remain documented limitations.
