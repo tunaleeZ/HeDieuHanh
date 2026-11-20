@@ -1,0 +1,78 @@
+Script started on 2026-11-20 13:05:51+07:00 [COMMAND="make qemu" TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="114" LINES="55"]
+qemu-system-riscv64 -machine virt -bios none -kernel kernel/kernel -m 128M -smp 3 -nographic -global virtio-mmio.force-legacy=false -drive file=fs.img,if=none,format=raw,id=x0 -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0
+
+xv6 kernel is booting
+
+hart 1 starting
+hart 2 starting
+init: starting sh
+$ memquotatest
+
+=== SCRUM-94 MEMORY QUOTA TEST ===
+
+[T07.1] Initial accounting
+PASS: Initial physical pages accounted
+Container 1: proc=1/8 pages=5/32
+
+[T07.2] Eager allocation
+PASS: Eager allocation of 4 pages
+PASS: Accounting increased by 4 pages
+Container 1: proc=1/8 pages=9/32
+
+[T09.1] Shrink eager memory
+PASS: Heap shrink succeeded
+PASS: Eager pages released
+
+[T07.3] Lazy allocation
+PASS: Lazy reservation consumes no physical pages
+PASS: Only 2 touched pages accounted
+Container 1: proc=1/8 pages=7/32
+PASS: Lazy heap shrink succeeded
+PASS: Only allocated lazy pages released
+
+[T08.1] Allocation above quota
+PASS: Allocation above quota rejected
+PASS: No quota leak after rejected allocation
+
+[T08.2] Fork above memory quota
+PASS: Memory quota fully occupied
+PASS: Fork rejected by memory quota
+PASS: No quota leak after rejected fork
+
+[T08.5] Exec above memory quota
+PASS: Exec rejected when no free quota
+PASS: Old image preserved after exec failure
+PASS: Release filled memory
+PASS: Memory returned to baseline
+
+[T09.3] Fork and wait recovery
+PASS: Fork succeeds after quota recovery
+PASS: Child successfully reaped
+PASS: Child memory fully reclaimed
+
+[T08.4] Lazy allocation above quota
+PASS: Created lazy ausertrap(): unexpected scause 0xlf pid=7
+            sepc=0x558 stval=0x1b000
+location test child
+PASS: Lazy quota violation terminated child
+PASS: Lazy violation memory reclaimed
+Container 1: proc=1/8 pages=5/32
+
+Container tests: 0 failures
+PASS: Container internal tests completed
+
+[T09.4] Full container recovery
+PASS: Container pages_used returned to zero
+PASS: Container proc_count returned to zero
+Container 1: proc=0/8 pages=0/32
+
+[T08.3] Entry above memory quota
+PASS: PID unchanged after rejected entry
+PASS: Rejected entry leaves target unchanged
+
+=== MEMORY QUOTA TEST: 0 failures ===
+$ echo HOST_OK
+HOST_OK
+$ QEMU: Terminated
+
+Script done on 2026-11-20 13:07:24+07:00 [COMMAND_EXIT_CODE="0"]
