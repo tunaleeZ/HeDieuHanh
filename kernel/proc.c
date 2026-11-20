@@ -140,26 +140,6 @@ global_pid_from_visible(struct proc *viewer, int virtual_pid)
 }
 
 // Reserve user pages against a container's configured limit.
-//int
-//container_reserve_pages(struct container *c, int n)
-//{
- // if (c == 0 || n < 0)
-  //  return -1;
-
-//  acquire(&c->lock);
-//  if (!c->active ||
-//      c->pages_used <0 ||
-//      n > 0x7fffffff - c->pages_used ||
-//      (c->max_pages > 0 && c->pages_used  > c->max_pages||
-//       n > c->max_pages - c->pages_used)) ) {
-//    release(&c->lock);
-//    return -1;
-//  }
-//  c->pages_used += n;
-//  release(&c->lock);
-//  return 0;
-//}
-
 int
 container_reserve_pages(struct container *c, int n)
 {
@@ -364,16 +344,18 @@ found:
 static void
 freeproc(struct proc *p)
 {
-  // Release the process slot from its container.
-  if (p->container != 0) {
-    container_release(p->container);
-    p->container = 0;
-  }
   if (p->trapframe)
     kfree((void *)p->trapframe);
   p->trapframe = 0;
   if (p->pagetable)
-    proc_freepagetable(p->pagetable, p->sz);
+    proc_freepagetable_accounted(p->pagetable, p->sz,
+                                 p->container);
+
+  // Release membership after releasing user memory.
+  if (p->container != 0) {
+    container_release(p->container);
+    p->container = 0;
+  }
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -472,11 +454,13 @@ growproc(int n)
     if (sz + n > TRAPFRAME) {
       return -1;
     }
-    if ((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
+    if ((sz = uvmalloc_accounted(p->pagetable, sz, sz + n,
+                              PTE_W, p->container)) == 0) {
       return -1;
     }
   } else if (n < 0) {
-    sz = uvmdealloc(p->pagetable, sz, sz + n);
+    sz = uvmdealloc_accounted(p->pagetable, sz, sz + n,
+                               p->container);
   }
   p->sz = sz;
   return 0;
@@ -506,7 +490,8 @@ kfork(void)
   np->container = p->container;
 
   // Copy user memory from parent to child.
-  if (uvmcopy(p->pagetable, np->pagetable, p->sz) < 0) {
+  if (uvmcopy_accounted(p->pagetable, np->pagetable,
+                       p->sz, np->container) < 0) {
     container_release(np->container);
     np->container = 0; //xu ly rollback
 
@@ -1158,6 +1143,7 @@ kcontainer_enter(int id)
   struct inode *root;
   struct inode *oldroot, *oldcwd;
   int virtual_pid;
+  int pages;
 
   if (!container_is_host())
     return -1;
@@ -1191,10 +1177,17 @@ kcontainer_enter(int id)
   // Lock the process before the container, matching freeproc's p->lock to
   // container->lock order. Publish membership with the PID reservation so a
   // namespace-init exit either sees this process or closes entry first.
+  pages = uvm_count_pages(p->pagetable, 0, p->sz);
+
   acquire(&p->lock);
   acquire(&new->lock);
   if (!new->active || new->root == 0 || new->next_virtual_pid == 0 ||
-      (new->max_proc > 0 && new->proc_count >= new->max_proc)) {
+      (new->max_proc > 0 && new->proc_count >= new->max_proc) ||
+      new->pages_used < 0 ||
+      pages > 0x7fffffff - new->pages_used ||
+      (new->max_pages > 0 &&
+       (new->pages_used > new->max_pages ||
+        pages > new->max_pages - new->pages_used))) {
     release(&new->lock);
     release(&p->lock);
     return -1;
@@ -1206,12 +1199,14 @@ kcontainer_enter(int id)
   else
     new->next_virtual_pid++;
   new->proc_count++;
+  new->pages_used += pages;
   p->container = new;
   p->virtual_pid = virtual_pid;
   release(&new->lock);
   release(&p->lock);
 
-  // Release quota in the old container.
+  // Release memory and process quota in the old container.
+  container_release_pages(old, pages);
   container_release(old);
 
   // The root is immutable after the reservation above prevents setroot.

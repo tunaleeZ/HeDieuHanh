@@ -69,8 +69,8 @@ kexec(char *path, char **argv)
     if (ph.vaddr % PGSIZE != 0)
       goto bad;
     uint64 sz1;
-    if ((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz,
-                        flags2perm(ph.flags))) == 0)
+    if ((sz1 = uvmalloc_accounted(pagetable, sz, ph.vaddr + ph.memsz,
+                                  flags2perm(ph.flags), p->container)) == 0)
       goto bad;
     sz = sz1;
     if (loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
@@ -88,7 +88,9 @@ kexec(char *path, char **argv)
   // Use the rest as the user stack.
   sz = PGROUNDUP(sz);
   uint64 sz1;
-  if ((sz1 = uvmalloc(pagetable, sz, sz + (USERSTACK + 1) * PGSIZE, PTE_W)) ==
+  if ((sz1 = uvmalloc_accounted(pagetable, sz,
+                                  sz + (USERSTACK + 1) * PGSIZE,
+                                  PTE_W, p->container)) ==
       0)
     goto bad;
   sz = sz1;
@@ -135,13 +137,13 @@ kexec(char *path, char **argv)
   p->sz = sz;
   p->trapframe->epc = elf.entry; // initial program counter = ulib.c:start()
   p->trapframe->sp = sp;         // initial stack pointer
-  proc_freepagetable(oldpagetable, oldsz);
+  proc_freepagetable_accounted(oldpagetable, oldsz, p->container);
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
   if (pagetable)
-    proc_freepagetable(pagetable, sz);
+    proc_freepagetable_accounted(pagetable, sz, p->container);
   if (ip) {
     iunlockput(ip);
     end_op();

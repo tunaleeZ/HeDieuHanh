@@ -459,21 +459,42 @@ uint64
 vmfault(pagetable_t pagetable, uint64 psz, uint64 va, int read)
 {
   uint64 mem;
+  struct proc *p = myproc();
+  struct container *c;
 
-  if (va >= psz)
+  if (p == 0 || p->container == 0 ||
+      pagetable != p->pagetable)
     return 0;
+
+  c = p->container;
+
+  if (va >= psz || va >= TRAPFRAME)
+    return 0;
+
   va = PGROUNDDOWN(va);
-  if (ismapped(pagetable, va)) {
+
+  if (ismapped(pagetable, va))
     return 0;
-  }
+
+  if (container_reserve_pages(c, 1) < 0)
+    return 0;
+
   mem = (uint64)kalloc();
-  if (mem == 0)
-    return 0;
-  memset((void *)mem, 0, PGSIZE);
-  if (mappages(pagetable, va, PGSIZE, mem, PTE_W | PTE_U | PTE_R) != 0) {
-    kfree((void *)mem);
+
+  if (mem == 0) {
+    container_release_pages(c, 1);
     return 0;
   }
+
+  memset((void *)mem, 0, PGSIZE);
+
+  if (mappages(pagetable, va, PGSIZE, mem,
+               PTE_W | PTE_U | PTE_R) != 0) {
+    kfree((void *)mem);
+    container_release_pages(c, 1);
+    return 0;
+  }
+
   return mem;
 }
 
@@ -488,4 +509,128 @@ ismapped(pagetable_t pagetable, uint64 va)
     return 1;
   }
   return 0;
+}
+// Count physically mapped pages in a process address range.
+// Includes the stack guard page, but excludes kernel mappings.
+int
+uvm_count_pages(pagetable_t pagetable, uint64 start, uint64 end)
+{
+  uint64 a;
+  pte_t *pte;
+  int count = 0;
+
+  if (pagetable == 0 || end <= start)
+    return 0;
+
+  for (a = PGROUNDUP(start); a < end; a += PGSIZE) {
+    pte = walk(pagetable, a, 0);
+
+    if (pte == 0)
+      continue;
+
+    if ((*pte & PTE_V) == 0)
+      continue;
+
+    if ((*pte & (PTE_R | PTE_W | PTE_X)) == 0)
+      continue;
+
+    count++;
+  }
+
+  return count;
+}
+
+// Allocate user pages with container quota accounting.
+uint64
+uvmalloc_accounted(pagetable_t pagetable, uint64 oldsz,
+                   uint64 newsz, int xperm,
+                   struct container *c)
+{
+  uint64 result;
+  uint64 pages;
+  int n;
+
+  if (newsz <= oldsz)
+    return oldsz;
+
+  if (newsz > TRAPFRAME)
+    return 0;
+
+  pages = (PGROUNDUP(newsz) - PGROUNDUP(oldsz)) / PGSIZE;
+
+  if (pages > 0x7fffffff)
+    return 0;
+
+  n = (int)pages;
+
+  if (c == 0)
+    return 0;
+
+  if (container_reserve_pages(c, n) < 0)
+    return 0;
+
+  result = uvmalloc(pagetable, oldsz, newsz, xperm);
+
+  if (result == 0) {
+    container_release_pages(c, n);
+    return 0;
+  }
+
+  return result;
+}
+// Shrink user memory and release the corresponding quota.
+uint64
+uvmdealloc_accounted(pagetable_t pagetable, uint64 oldsz,
+                     uint64 newsz, struct container *c)
+{
+  int n;
+  uint64 result;
+
+  if (newsz >= oldsz)
+    return oldsz;
+
+  n = uvm_count_pages(pagetable, PGROUNDUP(newsz), oldsz);
+
+  result = uvmdealloc(pagetable, oldsz, newsz);
+
+  if (c != 0 && n > 0)
+    container_release_pages(c, n);
+
+  return result;
+}
+
+// Copy physical pages into a child process with quota enforcement.
+int
+uvmcopy_accounted(pagetable_t old, pagetable_t new,
+                  uint64 sz, struct container *c)
+{
+  int n;
+
+  if (c == 0)
+    return -1;
+
+  n = uvm_count_pages(old, 0, sz);
+
+  if (container_reserve_pages(c, n) < 0)
+    return -1;
+
+  if (uvmcopy(old, new, sz) < 0) {
+    container_release_pages(c, n);
+    return -1;
+  }
+
+  return 0;
+}
+
+// Free a process image and release its physical-page quota.
+void
+proc_freepagetable_accounted(pagetable_t pagetable,
+                            uint64 sz, struct container *c)
+{
+  int n = uvm_count_pages(pagetable, 0, sz);
+
+  proc_freepagetable(pagetable, sz);
+
+  if (c != 0 && n > 0)
+    container_release_pages(c, n);
 }
